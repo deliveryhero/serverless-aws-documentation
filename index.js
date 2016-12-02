@@ -26,7 +26,7 @@ class ServerlessModelPlugin {
       models = this.serverless.variables.service.custom.models;
     }
 
-    const resources = this.serverless.service.provider;
+    const provider = this.serverless.service.provider;
 
     this.serverless.service.getAllFunctions().forEach(functionName => {
       const func = this.serverless.service.getFunction(functionName)
@@ -35,8 +35,27 @@ class ServerlessModelPlugin {
       //   console.log(eventTypes);
       // });
     });
-    // console.log('vvvvvvvv');
-    // console.log('res', resources.compiledCloudFormationTemplate);
+
+    const cfTemplate = provider.compiledCloudFormationTemplate;
+    for (const modelName in models) {
+      if (models.hasOwnProperty(modelName)) {
+        const model = {
+          Type: 'AWS::ApiGateway::Model',
+          Properties: {
+            RestApiId: {
+              Ref: 'ApiGatewayRestApi',
+            },
+            ContentType: models[modelName].ContentType,
+            Name: modelName,
+            Schema: models[modelName].schema,
+          },
+        };
+        cfTemplate.Resources[modelName + 'Model'] = model;
+      }
+    }
+
+    // console.log('res', provider.compiledCloudFormationTemplate);
+
   }
 
 }
