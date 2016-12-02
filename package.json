@@ -1,5 +1,5 @@
 {
-  "name": "serverless-model-plugin",
+  "name": "serverless-aws-models",
   "version": "0.0.0",
   "description": "",
   "main": "index.js",
@@ -7,5 +7,5 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "MIT"
 }
