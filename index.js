@@ -1,13 +1,15 @@
 'use strict';
 
-class ServerlessModelPlugin {
+class ServerlessAwsModels {
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
     this.provider = 'aws'
 
+    this._beforeDeployFunctions = this.beforeDeployFunctions.bind(this)
+
     this.hooks = {
-      'before:deploy:deploy': this.beforeDeployFunctions.bind(this),
+      'before:deploy:deploy': this._beforeDeployFunctions,
     };
   }
 
@@ -70,7 +72,7 @@ class ServerlessModelPlugin {
 
     // Add models to method resources
     this.serverless.service.getAllFunctions().forEach(functionName => {
-      const func = this.serverless.service.getFunction(functionName)
+      const func = this.serverless.service.getFunction(functionName);
       func.events.forEach(eventTypes => {
         if (eventTypes.http) {
           const resourceName = normalizePath(eventTypes.http.path);
@@ -90,4 +92,4 @@ class ServerlessModelPlugin {
 
 }
 
-module.exports = ServerlessModelPlugin;
+module.exports = ServerlessAwsModels;
