@@ -1,0 +1,38 @@
+{
+  "extends": "eslint:recommended",
+  "ecmaFeatures": {
+    "modules": true
+  },
+  "rules": {
+    "no-underscore-dangle": 0,
+    "no-restricted-syntax": ["error", "WithStatement"],
+    "no-param-reassign": ["error", {
+      "props": false
+    }],
+    "func-names": 0,
+    "prefer-arrow-callback": 0,
+    "quotes": ["error", "single", { "allowTemplateLiterals": true }]
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es6": true
+  },
+  "globals": {
+    "afterEach": false,
+    "beforeEach": false,
+    "describe": false,
+    "expect": false,
+    "it": false,
+    "jasmine": false,
+    "pending": false,
+    "spyOn": false,
+    "waits": false,
+    "waitsFor": false,
+    "xdescribe": false,
+    "xit": false,
+    "beforeAll": false,
+    "afterAll": false,
+    "runs": false
+  }
+}
