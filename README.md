@@ -1,4 +1,5 @@
-[![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
+[![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com) [![Build Status](https://travis-ci.org/9cookies/serverless-aws-models.svg?branch=master)](https://travis-ci.org/9cookies/serverless-aws-models) [![codecov](https://codecov.io/gh/9cookies/serverless-aws-models/branch/master/graph/badge.svg)](https://codecov.io/gh/9cookies/serverless-aws-models)
+
 
 # Serverless AWS Models
 

@@ -4,12 +4,15 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "test": "jasmine ./index.spec.js"
+    "codecov": "cat coverage/*/lcov.info | codecov",
+    "test": "istanbul cover -x \"src/index.spec.js\" jasmine ./src/index.spec.js"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "codecov": "^1.0.1",
     "eslint": "^3.11.1",
+    "istanbul": "^0.4.5",
     "jasmine": "^2.5.2"
   }
 }
