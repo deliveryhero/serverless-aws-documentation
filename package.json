@@ -1,13 +1,14 @@
 {
   "name": "serverless-aws-models",
   "version": "1.0.0",
-  "description": "",
+  "description": "Serverless 1.0 plugin to add models to API Gateway generated for your serverless functions",
   "main": "src/index.js",
   "scripts": {
     "codecov": "cat coverage/*/lcov.info | codecov",
     "test": "istanbul cover -x \"src/index.spec.js\" jasmine ./src/index.spec.js"
   },
-  "author": "",
+  "repository": "9cookies/serverless-aws-models",
+  "author": "Simon Jentsch <simon.jentsch@9cookies.com> (https://twitter.com/tchockie)",
   "license": "MIT",
   "devDependencies": {
     "codecov": "^1.0.1",
