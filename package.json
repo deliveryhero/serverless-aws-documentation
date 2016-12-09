@@ -15,5 +15,8 @@
     "eslint": "^3.11.1",
     "istanbul": "^0.4.5",
     "jasmine": "^2.5.2"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.7.12"
   }
 }

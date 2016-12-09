@@ -1,0 +1,22 @@
+{
+  "api": {
+    "type": "API",
+    "isList": false,
+    "locationProps": []
+  },
+  "authorizers": {
+    "type": "AUTHORIZER",
+    "isList": true,
+    "locationProps": ["name"]
+  },
+  "models": {
+    "type": "MODEL",
+    "isList": true,
+    "locationProps": ["name"]
+  },
+  "resources": {
+    "type": "RESOURCE",
+    "isList": true,
+    "locationProps": ["path"]
+  }
+}
