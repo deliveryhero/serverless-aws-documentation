@@ -81,7 +81,25 @@ module.exports = {
         part.properties = JSON.stringify(part.properties);
         return apiGateway.createDocumentationPart(part).promise();
       }))
-      .then(promises => Promise.all(promises));
+      .then(promises => Promise.all(promises))
+      .then(() => apiGateway.getDocumentationVersion({
+        restApiId: this.restApiId,
+        documentationVersion: this.customVars.documentation.version,
+      }).promise())
+      .then(version => {
+        console.info('-------------------');
+        console.info('documentation version already exists, skipping upload');
+      }, err => {
+        if (err.message === 'Invalid Documentation version specified') {
+          return apiGateway.createDocumentationVersion({
+            restApiId: this.restApiId,
+            documentationVersion: this.customVars.documentation.version,
+            stageName: this.options.stage,
+          }).promise();
+        }
+
+        return Promise.reject(err);
+      });
   },
 
   getGlobalDocumentationParts: function getGlobalDocumentationParts() {
