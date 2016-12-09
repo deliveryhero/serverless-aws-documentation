@@ -1,0 +1,46 @@
+{
+  "documentation": {
+    "type": "METHOD",
+    "isList": false,
+    "locationProps": ["path", "method"],
+    "children": {
+      "requestBody": {
+        "type": "REQUEST_BODY",
+        "isList": false,
+        "locationProps": ["path", "method"]
+      },
+      "requestHeaders": {
+        "type": "REQUEST_HEADER",
+        "isList": true,
+        "locationProps": ["path", "method", "name"]
+      },
+      "queryParams": {
+        "type": "QUERY_PARAMETER",
+        "isList": true,
+        "locationProps": ["path", "method", "name"]
+      },
+      "pathParams": {
+        "type": "PATH_PARAMETER",
+        "isList": true,
+        "locationProps": ["path", "method", "name"]
+      },
+      "methodResponses": {
+        "type": "RESPONSE",
+        "isList": true,
+        "locationProps": ["path", "method", "statusCode"],
+        "children": {
+          "ResponseHeaders": {
+            "type": "RESPONSE_HEADER",
+            "isList": true,
+            "locationProps": ["path", "method", "name", "statusCode"]
+          },
+          "ResponseBody": {
+            "type": "RESPONSE_BODY",
+            "isList": false,
+            "locationProps": ["path", "method", "statusCode"]
+          }
+        }
+      }
+    }
+  }
+}
