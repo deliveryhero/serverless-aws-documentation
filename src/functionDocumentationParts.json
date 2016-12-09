@@ -29,12 +29,12 @@
         "isList": true,
         "locationProps": ["path", "method", "statusCode"],
         "children": {
-          "ResponseHeaders": {
+          "responseHeaders": {
             "type": "RESPONSE_HEADER",
             "isList": true,
             "locationProps": ["path", "method", "name", "statusCode"]
           },
-          "ResponseBody": {
+          "responseBody": {
             "type": "RESPONSE_BODY",
             "isList": false,
             "locationProps": ["path", "method", "statusCode"]
