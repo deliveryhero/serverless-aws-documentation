@@ -1,11 +1,11 @@
 const proxyquire = require('proxyquire');
 
-describe('ServerlessAwsModels', function() {
+describe('ServerlessAWSDocumentation', function() {
   const awsMock = {
     APIGateway: {}
   };
 
-  const ServerlessAwsModels = proxyquire('./index.js', {
+  const ServerlessAWSDocumentation = proxyquire('./index.js', {
     './aws.js': () => awsMock,
   });
 
@@ -69,7 +69,7 @@ describe('ServerlessAwsModels', function() {
 
       this.optionsMock = {};
 
-      this.plugin = new ServerlessAwsModels(this.serverlessMock, this.optionsMock);
+      this.plugin = new ServerlessAWSDocumentation(this.serverlessMock, this.optionsMock);
   });
 
   describe('before deploy', function() {
