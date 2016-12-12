@@ -1,27 +1,28 @@
 [![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com) [![Build Status](https://travis-ci.org/9cookies/serverless-aws-models.svg?branch=master)](https://travis-ci.org/9cookies/serverless-aws-models) [![codecov](https://codecov.io/gh/9cookies/serverless-aws-models/branch/master/graph/badge.svg)](https://codecov.io/gh/9cookies/serverless-aws-models) [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/hyperium/hyper/master/LICENSE)
 
-# Serverless AWS Models
+# Serverless AWS Documentation
 
-This is a [Serverless](http://www.serverless.com) 1.0 plugin that adds support for AWS API Gateway
-models (e.g. to export a Swagger JSON file with input/output definitions for API documentation).
+This is a [Serverless](http://www.serverless.com) v1 plugin that adds support for AWS API Gateway
+documentation and models (e.g. to export a Swagger JSON file with input/output definitions and full text
+documentation for API documentation).
 
 ## Install
 
 This plugin only works for Serverless 1.0 and up. For a plugin that supports 0.5 look at
 [this plugin](https://github.com/HyperBrain/serverless-models-plugin).
 
-To install this plugin, add Serverless AWS Models:
+To install this plugin, add `serverless-aws-documentation` to your package.json:
 
 ```
-npm install serverless-aws-models --save-dev
+npm install serverless-aws-documentation --save-dev
 ```
 
-After that you need to add the `serverless-aws-models` plugin in to serverless.yml file:
+After that you need to add the `serverless-aws-documenation` plugin in to serverless.yml file:
 If you don't have a plugins section add it. It should look like this:
 
 ```YAML
 plugins:
-  - serverless-aws-models
+  - serverless-aws-documenation
 ```
 
 If you wan't to check if the plugin was added successfully, you can run this in your command line:
@@ -34,42 +35,145 @@ The plugin should show up in the "Plugins" section of the output.
 ## Usage
 
 There are two places you need to touch in the `serverless.yml`: *custom variables* to define your
-models and the *http* events in your `functions` section to add these models to your requests and
-responses.
+general documentation descriptions and models, and the *http* events in your `functions` section to
+add these models to your requests and responses and add description to function relevant parts.
 
-### Define the models
+### Define descriptions for your documentation
 
-To use this plugin you first need to configure the models in your project's `serverless.yml` file:
+For manual full text descriptions for the parts of your API you need to describe it's structure.
+In the general part you can describe your API in general, authorizers, models and resources.
+If you want to find out more about models, you can skip to the next section.
 
-First you need to define the models that you want to use in the custom variables section like this:
+Your general documentation has to be nested in the custom variables section and looks like this:
 
 ```YAML
 custom:
-  models:
-    ErrorResponse:
-      ContentType: "application/json"
-      Schema: ${file(models/error.json)}
-    CreateRequest:
-      ContentType: "application/json"
-      Schema: ${file(models/create_request.json)}
+  documentation:
+    summary: 'My API'
+    description: 'This is my API'
+    authorizers:
+      -
+        name: "MyCustomAuthorizer"
+        description: "This is an error"
+    resources:
+      -
+        path: "some/path"
+        description: "This is the description for some/path"
+      -
+        path: "some/other/path"
+        description: "This is the description for some/other/path"
 ```
 
-Your models live in the ```models``` section of the custom variables section. If you haven't
-defined any custom variables yet you need to add the `custom` section like in the code example above.
+Your documentation has to be nested in the `documentation` custom variable. You describe your
+documentation parts with the `description` and `summary` properties. The summary is some sort of
+title and the description is for further explanation.
 
-You can define multiple models inside the ```models``` section. The property name of each model
-defines the name of the model. Inside the model you have two properties that are mandatory:
+On the upper level (directly in the `documentation` section) you describe your API in general.
+Underneath you can define `authorizers`, `resources` and `models` which are all lists of descriptions.
+In addition to the description and the summary, Authorizers need the name of the authorizer, resources
+need the path of the described resource and models need the name of the model.
 
-* `ContentType`: the content type of the described request/response (like `"application/json"` or
+
+### Define the models
+
+Models have additional information you have to define. Beside the model name, the description and
+the summary, you need to define the *content type* this model is for and the *schema* that describes
+the model. Both are mandatory:
+
+* `contentType`: the content type of the described request/response (like `"application/json"` or
 `"application/xml"`).
-* `Schema`: The JSON Schema that describes the model. In the examples above external files are
+* `schema`: The JSON Schema that describes the model. In the examples above external files are
 imported but you can also define the schema in the YAML file if you want.
 
-### Add the models to your functions
+Your models definition could look like this:
 
-To add the models to your functions you need to add some lines to the `http` events of your functions.
+```YAML
+custom:
+  documentation:
+    models:
+      -
+        name: "ErrorResponse"
+        description: "This is an error"
+        contentType: "application/json"
+        schema: ${file(models/error.json)}
+      -
+        name: "CreateRequest"
+        description: "Model for creating something"
+        contentType: "application/json"
+        schema: ${file(models/create_request.json)}
+```
 
-There are two properties you can use:
+### Function specific documentation
+
+When you want to describe the parts inside a `RESOURCE` you need to do this in the functions
+described in your `serverless.yml`. Inside the `http` event of your functions you need to add the
+`documentation` property which can hold the following parts:
+
+* The method description which is described directly inside the `documentation` property
+* `requestBody`: The body of your HTTP request
+* `requestHeaders`: A list of headers for your HTTP request (needs `name` of the header)
+* `queryParams`: A list of query parameters (needs `name` of the parameter)
+* `pathParams`: A list of path parameters (needs `name` of the parameter)
+* `methodResponses`: A list of method responses (needs the `statusCode` of the response)
+
+The methodResponses itself can have the following parts:
+
+* `responseBody`: The body of the HTTP request
+* `responseHeaders`: A list of headers for your HTTP response (needs `name` of the header)
+
+With this your function definition could look like this:
+
+```YAML
+createItem:
+  handler: handler.create
+  events:  
+    - http:
+        path: create
+        method: post
+        documentation:
+          summary: "Create something"
+          description: "Creates the thing you need"
+          requestBody:
+            description: "Request body description"
+          requestHeaders:
+            -
+              name: "x-header"
+              description: "Header description"
+            -
+              name: "Authorization"
+              description: "Auth Header description"
+          queryParams:
+            -
+              name: "sid"
+              description: "Session ID"
+            -
+              name: "theme"
+              description: "Theme for for the website"
+          pathParams:
+            -
+              name: "id"
+              description: "ID of the thing you want to create"
+          requestModels:
+            "application/json": "CreateRequest"
+            "application/xml": "CreateRequestXml"
+          methodResponses:
+            -
+              StatusCode: 200
+              responseBody:
+                description: "Response body description"
+              responseHeaders:
+                -
+                  name: "x-superheader"
+                  description: "this is a super header"
+              responseModels:
+                "application/json": "CreateResponse"
+            -
+              StatusCode: 400
+              responseModels:
+                "application/json": "ErrorResponse"
+```
+
+To add your defined models to the function you also need the following properties.
 
 #### requestModels
 
@@ -84,50 +188,29 @@ requestModels:
   "application/xml": "CreateRequestXml"
 ```
 
-#### methodResponses
+#### methodResponses.responseModels
 
-In the `methodResponses` property you can define multiple responses for this function as a list.
-A response needs the `StatusCode` property containing the HTTP status code for the described response
-and the `ResponseModels` property containing the models for the different content types. These response
-models are described like the `requestModels` above.
+In the `methodResponses` property you can define multiple response models for this function.
+The response models are described in the `ResponseModels` property which contains the models for the
+different content types. These response models are described like the `requestModels` above.
 
 ```YAML
 methodResponses:
   -
-    StatusCode: 200
-    ResponseModels:
+    statusCode: 200
+    responseModels:
       "application/json": "CreateResponse"
       "application/xml": "CreateResponseXml"
   -
-    StatusCode: 400
-    ResponseModels:
+    statusCode: 400
+    responseModels:
       "application/json": "ErrorResponse"
 ```
 
-Here is a complete example with request models and method responses described for a simple function:
+In the full example above you also can see the definition of the `requestModels` and `responseModels`
+in a the context of the documenatation.
 
-```YAML
-createItem:
-  handler: handler.create
-  events:  
-    - http:
-        path: create
-        method: get
-        requestModels:
-          "application/json": "CreateRequest"
-          "application/xml": "CreateRequestXml"
-        methodResponses:
-          -
-            StatusCode: 200
-            ResponseModels:
-              "application/json": "CreateResponse"
-          -
-            StatusCode: 400
-            ResponseModels:
-              "application/json": "ErrorResponse"
-```
-
-### Deploy the models
+### Deploy the documenatation
 
 To deploy the models you described above you just need to use `serverless deploy` as you are used to.
 

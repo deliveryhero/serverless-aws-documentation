@@ -1,6 +1,6 @@
 'use strict';
 
-const documentationProperties = ['description'];
+const documentationProperties = ['description', 'summary'];
 
 const globalDocumentationParts = require('./globalDocumentationParts.json');
 const functionDocumentationParts = require('./functionDocumentationParts.json');
