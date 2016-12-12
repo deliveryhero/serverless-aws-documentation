@@ -1005,5 +1005,46 @@ describe('ServerlessAwsModels', function() {
       });
     });
 
+    it('should not do not delete any documentation parts if there are none', function (done) {
+      this.serverlessMock.providers.aws.request.and.returnValue(Promise.resolve({
+        Stacks: [{
+          Outputs: [{
+            OutputKey: 'ApiId',
+            OutputValue: 'superid',
+          }],
+        }],
+      }));
+      this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
+
+      this.apiGatewayMock.getDocumentationParts.and.returnValue({
+        promise: () => Promise.resolve({
+          items: [],
+        }),
+      });
+      this.apiGatewayMock.deleteDocumentationPart.and.returnValue({
+        promise: () => Promise.reject(),
+      });
+      this.apiGatewayMock.createDocumentationPart.and.returnValue({
+        promise: () => Promise.resolve(),
+      });
+
+      this.apiGatewayMock.getDocumentationVersion.and.returnValue({
+        promise: () => Promise.reject({
+          message: 'Invalid Documentation version specified',
+        }),
+      });
+
+      this.apiGatewayMock.createDocumentationVersion.and.returnValue({
+        promise: () => Promise.resolve(),
+      });
+
+      this.plugin.afterDeploy().then(() => {
+        expect(this.apiGatewayMock.getDocumentationParts).toHaveBeenCalled();
+        expect(this.apiGatewayMock.deleteDocumentationPart).not.toHaveBeenCalled();
+        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalled();
+        done();
+      });
+    });
+
   });
 });

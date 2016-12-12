@@ -82,11 +82,7 @@ module.exports = function(AWS) {
           return Promise.reject(msg);
         }, err => {
           if (err.message === 'Invalid Documentation version specified') {
-            return apiGateway.createDocumentationVersion({
-              restApiId: this.restApiId,
-              documentationVersion: this.customVars.documentation.version,
-              stageName: this.options.stage,
-            }).promise();
+            return Promise.resolve();
           }
 
           return Promise.reject(err);
@@ -104,7 +100,12 @@ module.exports = function(AWS) {
           part.properties = JSON.stringify(part.properties);
           return apiGateway.createDocumentationPart(part).promise();
         }))
-        .then(promises => Promise.all(promises));
+        .then(promises => Promise.all(promises))
+        .then(() => apiGateway.createDocumentationVersion({
+          restApiId: this.restApiId,
+          documentationVersion: this.customVars.documentation.version,
+          stageName: this.options.stage,
+        }).promise());
     },
 
     getGlobalDocumentationParts: function getGlobalDocumentationParts() {
