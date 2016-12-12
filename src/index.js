@@ -54,7 +54,14 @@ class ServerlessAwsModels {
     return this.serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
       this.options.stage,
       this.options.region
-    ).then(this._buildDocumentation.bind(this));
+    ).then(this._buildDocumentation.bind(this))
+    .catch(err => {
+      if (err === 'documentation version already exists, skipping upload') {
+        return Promise.resolve();
+      }
+
+      return Promise.reject(err);
+    });
   }
 
 }

@@ -927,7 +927,7 @@ describe('ServerlessAwsModels', function() {
       this.apiGatewayMock.getDocumentationVersion.and.returnValue({
         promise: () => Promise.resolve(),
       });
-      this.plugin.afterDeploy().catch(() => {
+      this.plugin.afterDeploy().then(() => {
         expect(this.apiGatewayMock.getDocumentationParts).not.toHaveBeenCalled();
         expect(this.apiGatewayMock.deleteDocumentationPart).not.toHaveBeenCalled();
         expect(this.apiGatewayMock.createDocumentationPart).not.toHaveBeenCalled();
@@ -984,7 +984,7 @@ describe('ServerlessAwsModels', function() {
       });
     });
 
-    it('should not do anything if an list documentation part is not an array', function () {
+    it('should not do anything if an list documentation part is not an array', function (done) {
       spyOn(console, 'info');
       this.serverlessMock.variables.service.custom.documentation.models = {
         this: 'is wrong',
