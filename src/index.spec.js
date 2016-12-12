@@ -652,7 +652,9 @@ describe('ServerlessAwsModels', function() {
               path: 'some/path',
               method: 'post',
               documentation: {
-                description: 'hello',
+                summary: 'hello',
+                description: 'hello hello',
+                unknownProperty: 'should not be displayed',
                 requestBody: {
                   description: 'is it me',
                 },
@@ -837,7 +839,7 @@ describe('ServerlessAwsModels', function() {
         });
         expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
           location: { path: 'some/path', method: 'POST', type: 'METHOD' },
-          properties: JSON.stringify({ description: 'hello' }),
+          properties: JSON.stringify({ description: 'hello hello', summary: 'hello' }),
           restApiId: 'superid',
         });
         expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
