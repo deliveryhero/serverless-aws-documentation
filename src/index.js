@@ -3,7 +3,7 @@ const documentation = require('./documentation');
 const models = require('./models');
 const aws = require('./aws.js')();
 
-class ServerlessAwsModels {
+class ServerlessAWSDocumentation {
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
@@ -66,4 +66,4 @@ class ServerlessAwsModels {
 
 }
 
-module.exports = ServerlessAwsModels;
+module.exports = ServerlessAWSDocumentation;
