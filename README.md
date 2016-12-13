@@ -6,6 +6,12 @@ This is a [Serverless](http://www.serverless.com) v1 plugin that adds support fo
 documentation and models (e.g. to export a Swagger JSON file with input/output definitions and full text
 documentation for API documentation).
 
+## What is AWS API Gateway documentation?
+
+Amazon introduced a new documentation feature for it's API Gateway on AWS on December 1st. With this you can add manually written documentation to all parts of API Gateway such as resources, requests, responses or single path or query parameters. When exporting Swagger from API Gateway these documentation is added to the other information to create a more human understandable documentation. 
+
+In addition to this documentation this plugin also adds support to add models to API Gateway and use it with the serverless functions. Models are JSON Schemas that define the structure of request or response bodies. This includes property structure, their types and their validation. More about this you'll find here: https://spacetelescope.github.io/understanding-json-schema/
+
 ## Install
 
 This plugin only works for Serverless 1.0 and up. For a plugin that supports 0.5 look at
@@ -213,6 +219,10 @@ in a the context of the documenatation.
 ### Deploy the documenatation
 
 To deploy the models you described above you just need to use `serverless deploy` as you are used to.
+
+## Coming soon
+
+A demo `serverless.yml` to help you better understand how to use this plugin.
 
 ## Contribution
 
