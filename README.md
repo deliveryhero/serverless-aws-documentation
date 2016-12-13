@@ -132,7 +132,7 @@ With this your function definition could look like this:
 ```YAML
 createItem:
   handler: handler.create
-  events:  
+  events:
     - http:
         path: create
         method: post
@@ -164,7 +164,7 @@ createItem:
             "application/xml": "CreateRequestXml"
           methodResponses:
             -
-              StatusCode: 200
+              statusCode: 200
               responseBody:
                 description: "Response body description"
               responseHeaders:
@@ -174,7 +174,7 @@ createItem:
               responseModels:
                 "application/json": "CreateResponse"
             -
-              StatusCode: 400
+              statusCode: 400
               responseModels:
                 "application/json": "ErrorResponse"
 ```
