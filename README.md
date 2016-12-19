@@ -28,7 +28,7 @@ If you don't have a plugins section add it. It should look like this:
 
 ```YAML
 plugins:
-  - serverless-aws-documenation
+  - serverless-aws-documentation
 ```
 
 If you wan't to check if the plugin was added successfully, you can run this in your command line:
