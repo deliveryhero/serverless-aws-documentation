@@ -23,20 +23,20 @@ To install this plugin, add `serverless-aws-documentation` to your package.json:
 npm install serverless-aws-documentation --save-dev
 ```
 
-After that you need to add the `serverless-aws-documenation` plugin in to serverless.yml file:
-If you don't have a plugins section add it. It should look like this:
+Next, add the `serverless-aws-documenation` plugin in to serverless.yml file:
+If you don't already have a plugins section, create one that looks like this:
 
 ```YAML
 plugins:
-  - serverless-aws-documenation
+  - serverless-aws-documentation
 ```
 
-If you wan't to check if the plugin was added successfully, you can run this in your command line:
+To verify that the plugin was added successfully, run this in your command line:
 ```
 serverless
 ```
 
-The plugin should show up in the "Plugins" section of the output.
+The plugin should show up in the "Plugins" section of the output as "ServerlessAwsModels"
 
 ## Usage
 
@@ -82,14 +82,14 @@ need the path of the described resource and models need the name of the model.
 
 ### Define the models
 
-Models have additional information you have to define. Beside the model name, the description and
-the summary, you need to define the *content type* this model is for and the *schema* that describes
+Models have additional information you have to define. Besides the model name, the description and
+the summary, you need to define the *content type* for this model in addition to the *schema* that describes
 the model. Both are mandatory:
 
 * `contentType`: the content type of the described request/response (like `"application/json"` or
 `"application/xml"`).
-* `schema`: The JSON Schema that describes the model. In the examples above external files are
-imported but you can also define the schema in the YAML file if you want.
+* `schema`: The JSON Schema that describes the model. In the examples below external files are
+imported, but you can also define the schema inline using YAML format.
 
 Your models definition could look like this:
 
