@@ -75,7 +75,7 @@ module.exports = function(AWS) {
         restApiId: this.restApiId,
         documentationVersion: this.customVars.documentation.version,
       }).promise()
-        .then(version => {
+        .then(() => {
           const msg = 'documentation version already exists, skipping upload';
           console.info('-------------------');
           console.info(msg);
@@ -96,11 +96,12 @@ module.exports = function(AWS) {
           restApiId: this.restApiId,
         }).promise()))
         .then(promises => Promise.all(promises))
-        .then(() => this.documentationParts.map(part => {
-          part.properties = JSON.stringify(part.properties);
-          return apiGateway.createDocumentationPart(part).promise();
-        }))
-        .then(promises => Promise.all(promises))
+        .then(() => this.documentationParts.reduce((promise, part) => {
+          return promise.then(() => {
+            part.properties = JSON.stringify(part.properties);
+            return apiGateway.createDocumentationPart(part).promise();
+          });
+        }, Promise.resolve()))
         .then(() => apiGateway.createDocumentationVersion({
           restApiId: this.restApiId,
           documentationVersion: this.customVars.documentation.version,
