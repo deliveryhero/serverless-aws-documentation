@@ -131,6 +131,12 @@ module.exports = function(AWS) {
       this.restApiId = result.Stacks[0].Outputs
         .filter(output => output.OutputKey === 'ApiId')
         .map(output => output.OutputValue)[0];
+      if (!this.restApiId) {
+        // cloudformation stack doesn't always have ApiId:
+        this.restApiId = result.Stacks[0].Outputs
+          .filter(output => output.OutputKey === 'ServiceEndpoint')
+          .map(output => output.OutputValue.replace('https://', '').replace(/\..*/, ''))[0];
+      }
 
       this.getGlobalDocumentationParts();
       this.getFunctionDocumentationParts();
