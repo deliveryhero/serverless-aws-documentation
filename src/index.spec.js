@@ -27,7 +27,8 @@ describe('ServerlessAWSDocumentation', function() {
               ExistingResource: {
                 with: 'configuration',
               },
-            }
+            },
+            Outputs: {},
           }
         },
         getFunction: jasmine.createSpy('getFunction').and.callFake((functionName) => {
@@ -135,6 +136,14 @@ describe('ServerlessAWSDocumentation', function() {
             with: 'configuration',
           },
         },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
       });
     });
 
@@ -161,6 +170,14 @@ describe('ServerlessAWSDocumentation', function() {
           ExistingResource: {
             with: 'configuration',
           },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
         },
       });
     });
@@ -277,6 +294,14 @@ describe('ServerlessAWSDocumentation', function() {
             }
           },
         },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
       });
     });
 
@@ -354,6 +379,14 @@ describe('ServerlessAWSDocumentation', function() {
             }
           },
         },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
       });
     });
 
@@ -421,6 +454,14 @@ describe('ServerlessAWSDocumentation', function() {
               // },
             }
           },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
         },
       });
     });
@@ -533,6 +574,14 @@ describe('ServerlessAWSDocumentation', function() {
             },
           },
         },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
       });
     });
 
@@ -587,6 +636,14 @@ describe('ServerlessAWSDocumentation', function() {
             some: 'other_configuration',
             Properties: {},
           },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
         },
       });
     });
@@ -750,7 +807,7 @@ describe('ServerlessAWSDocumentation', function() {
             OutputKey: 'ApiKey',
             OutputValue: 'nothing',
           }, {
-            OutputKey: 'ApiId',
+            OutputKey: 'AwsDocApiId',
             OutputValue: 'superid',
           }],
         }],

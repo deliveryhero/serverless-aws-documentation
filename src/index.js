@@ -46,6 +46,14 @@ class ServerlessAWSDocumentation {
       const func = this.serverless.service.getFunction(functionName);
       func.events.forEach(this.updateCfTemplateFromHttp.bind(this));
     });
+
+    // Add models
+    this.cfTemplate.Outputs.AwsDocApiId = {
+      Description: 'API ID',
+      Value: {
+        Ref: 'ApiGatewayRestApi',
+      },
+    };
   }
 
   afterDeploy() {

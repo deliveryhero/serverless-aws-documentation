@@ -129,7 +129,7 @@ module.exports = function(AWS) {
 
     _buildDocumentation: function _buildDocumentation(result) {
       this.restApiId = result.Stacks[0].Outputs
-        .filter(output => output.OutputKey === 'ApiId')
+        .filter(output => output.OutputKey === 'AwsDocApiId')
         .map(output => output.OutputValue)[0];
 
       this.getGlobalDocumentationParts();
