@@ -31,6 +31,14 @@ module.exports = {
           ResponseModels: response.responseModels,
         };
 
+        if(response.responseHeaders){
+          const methodResponseHeaders = {};
+          response.responseHeaders.forEach(header => {
+            methodResponseHeaders[`method.response.header.${header.name}`] = true
+          });
+          _response.ResponseParameters = methodResponseHeaders;
+        }
+
         this.addModelDependencies(_response.ResponseModels, resource);
         resource.Properties.MethodResponses.push(_response);
       });
