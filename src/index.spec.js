@@ -305,6 +305,165 @@ describe('ServerlessAWSDocumentation', function() {
       });
     });
 
+    it('should only add response methods with response headers to ApiGateway methods', function () {
+      this.serverlessMock.variables.service.custom.documentation.models = [];
+      this.serverlessMock.service._functionNames = ['test', 'blub'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+              cors: true,
+              private: true,
+              documentation: {
+                methodResponses: [
+                  {
+                    statusCode: 200,
+                    responseModels: {
+                      'application/json': 'CreateResponse',
+                    },
+                    responseHeaders: [{
+                      name: 'x-header',
+                      description: 'THE header',
+                    }, {
+                      name: 'x-other-header',
+                      description: 'THE other header',
+                    }],
+                  },
+                  {
+                    statusCode: 400,
+                    responseModels: {
+                      'application/json': 'ErrorResponse'
+                    },
+                    responseHeaders: [{
+                      name: 'x-header',
+                      description: 'THE header',
+                    }],
+                  },
+                  {
+                    statusCode: 404,
+                    responseModels: {
+                      'application/json': 'ErrorResponse'
+                    },
+                    responseHeaders: [{
+                      name: 'x-header',
+                      description: 'THE header',
+                    }],
+                  },
+                ],
+              }
+            },
+          }],
+        },
+        blub: {
+          events: [{
+            http: {
+              path: 'some/other/path',
+              method: 'get',
+              cors: true,
+              private: true,
+              documentation: {
+                methodResponses: [
+                  {
+                    statusCode: 204,
+                    responseModels: {
+                      'application/json': 'CrazyResponse',
+                    },
+                    responseHeaders: [{
+                      name: 'x-header',
+                      description: 'THE header',
+                    }, {
+                      name: 'x-other-header',
+                      description: 'THE other header',
+                    }],
+                  },
+                ],
+              },
+            },
+          }],
+        },
+      };
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources;
+      resources.someotherpath_get = {
+        some: 'other_configuration',
+        Properties: {},
+      };
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {},
+      };
+
+      this.plugin.beforeDeploy();
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          somepath_post: {
+            some: 'configuration',
+            DependsOn: ['CreateResponseModel', 'ErrorResponseModel'],
+            Properties: {
+              MethodResponses: [{
+                StatusCode: 200,
+                ResponseModels: {
+                  'application/json': 'CreateResponse',
+                },
+                ResponseParameters: {
+                  'method.response.header.x-header': true,
+                  'method.response.header.x-other-header': true,
+                },
+              },
+              {
+                StatusCode: 400,
+                ResponseModels: {
+                  'application/json': 'ErrorResponse'
+                },
+                ResponseParameters: {
+                  'method.response.header.x-header': true,
+                },
+              },
+              {
+                StatusCode: 404,
+                ResponseModels: {
+                  'application/json': 'ErrorResponse'
+                },
+                ResponseParameters: {
+                  'method.response.header.x-header': true,
+                },
+              }],
+            },
+          },
+          someotherpath_get: {
+            some: 'other_configuration',
+            DependsOn: ['CrazyResponseModel'],
+            Properties: {
+              MethodResponses: [{
+                StatusCode: 204,
+                ResponseModels: {
+                  'application/json': 'CrazyResponse',
+                },
+                ResponseParameters: {
+                  'method.response.header.x-header': true,
+                  'method.response.header.x-other-header': true,
+                },
+              }],
+            }
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      });
+    });
+
     it('should only add request models to ApiGateway methods', function () {
       this.serverlessMock.variables.service.custom.documentation.models = [];
       this.serverlessMock.service._functionNames = ['test', 'blub'];
