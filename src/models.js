@@ -22,7 +22,7 @@ module.exports = {
   },
 
   addMethodResponses: function addMethodResponses(resource, documentation) {
-    if (documentation.methodResponses) {
+    if (resource.Properties.MethodResponses && documentation.methodResponses) {
       resource.Properties.MethodResponses.forEach(originalResponse => {
         documentation.methodResponses.forEach(response => {
           if(originalResponse.StatusCode === response.statusCode) {
