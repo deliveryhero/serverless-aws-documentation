@@ -305,7 +305,7 @@ describe('ServerlessAWSDocumentation', function () {
       });
     });
 
-    it('should only add response methods to ApiGateway methods', function () {
+    it('should only add response methods whith existence MethodResponses to ApiGateway methods', function () {
       this.serverlessMock.variables.service.custom.documentation.models = [];
       this.serverlessMock.service._functionNames = ['test'];
       this.serverlessMock.service._functions = {

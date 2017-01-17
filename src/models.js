@@ -28,6 +28,7 @@ module.exports = {
           documentation.methodResponses.forEach(response => {
             if (originalResponse.StatusCode === response.statusCode) {
               originalResponse.ResponseModels = response.responseModels;
+              this.addModelDependencies(originalResponse.ResponseModels, resource);
             }
           });
         });
