@@ -23,24 +23,12 @@ module.exports = {
 
   addMethodResponses: function addMethodResponses(resource, documentation) {
     if (documentation.methodResponses) {
-      resource.Properties.MethodResponses = [];
-
-      documentation.methodResponses.forEach(response => {
-        const _response = {
-          StatusCode: response.statusCode,
-          ResponseModels: response.responseModels,
-        };
-
-        if(response.responseHeaders){
-          const methodResponseHeaders = {};
-          response.responseHeaders.forEach(header => {
-            methodResponseHeaders[`method.response.header.${header.name}`] = true
-          });
-          _response.ResponseParameters = methodResponseHeaders;
-        }
-
-        this.addModelDependencies(_response.ResponseModels, resource);
-        resource.Properties.MethodResponses.push(_response);
+      resource.Properties.MethodResponses.forEach(originalResponse => {
+        documentation.methodResponses.forEach(response => {
+          if(originalResponse.StatusCode === response.statusCode) {
+            originalResponse.ResponseModels = response.responseModels;
+          }
+        });
       });
     }
   },
