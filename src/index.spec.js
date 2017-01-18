@@ -1,6 +1,6 @@
 const proxyquire = require('proxyquire');
 
-describe('ServerlessAWSDocumentation', function() {
+describe('ServerlessAWSDocumentation', function () {
   const awsMock = {
     APIGateway: {}
   };
@@ -60,20 +60,20 @@ describe('ServerlessAWSDocumentation', function() {
       },
     };
 
-      this.serverlessMock.providers.aws.naming.getMethodLogicalId.and.callFake((resourcename, method) => {
-        return `${resourcename}_${method}`;
-      });
+    this.serverlessMock.providers.aws.naming.getMethodLogicalId.and.callFake((resourcename, method) => {
+      return `${resourcename}_${method}`;
+    });
 
-      this.serverlessMock.providers.aws.naming.normalizePath.and.callFake((path) => {
-        return path.replace(/\//g, '');
-      });
+    this.serverlessMock.providers.aws.naming.normalizePath.and.callFake((path) => {
+      return path.replace(/\//g, '');
+    });
 
-      this.optionsMock = {};
+    this.optionsMock = {};
 
-      this.plugin = new ServerlessAWSDocumentation(this.serverlessMock, this.optionsMock);
+    this.plugin = new ServerlessAWSDocumentation(this.serverlessMock, this.optionsMock);
   });
 
-  describe('before deploy', function() {
+  describe('before deploy', function () {
 
     it('should init', function () {
       delete this.serverlessMock.variables.service.custom;
@@ -304,6 +304,89 @@ describe('ServerlessAWSDocumentation', function() {
         },
       });
     });
+
+    it('should only add response methods whith existence MethodResponses to ApiGateway methods', function () {
+      this.serverlessMock.variables.service.custom.documentation.models = [];
+      this.serverlessMock.service._functionNames = ['test'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+              cors: true,
+              private: true,
+              documentation: {
+                methodResponses: [
+                  {
+                    statusCode: 200,
+                    responseModels: {
+                      'application/json': 'CreateResponse',
+                    },
+                  },
+                  {
+                    statusCode: 404,
+                    responseModels: {
+                      'application/json': 'ErrorResponse'
+                    },
+                  },
+                ],
+              }
+            },
+          }],
+        },
+      };
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources;
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {
+          MethodResponses: [{
+            StatusCode: 200,
+          },
+          {
+            StatusCode: 404,
+          }],
+        },
+      };
+
+      this.plugin.beforeDeploy();
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          somepath_post: {
+            some: 'configuration',
+            DependsOn: ['CreateResponseModel', 'ErrorResponseModel'],
+            Properties: {
+              MethodResponses: [{
+                StatusCode: 200,
+                ResponseModels: {
+                  'application/json': 'CreateResponse',
+                },
+              },
+              {
+                StatusCode: 404,
+                ResponseModels: {
+                  'application/json': 'ErrorResponse'
+                },
+              }],
+            },
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      });
+    });
+
 
     it('should only add response methods with response headers to ApiGateway methods', function () {
       this.serverlessMock.variables.service.custom.documentation.models = [];
@@ -808,7 +891,7 @@ describe('ServerlessAWSDocumentation', function() {
     });
   });
 
-  describe('after deploy', function() {
+  describe('after deploy', function () {
     beforeEach(function () {
       this.apiGatewayMock = jasmine.createSpyObj([
         'getDocumentationParts',
@@ -835,10 +918,10 @@ describe('ServerlessAWSDocumentation', function() {
     it('should get stack description', function () {
       this.optionsMock.stage = 'megastage';
       this.optionsMock.region = 'hyperregion';
-      this.serverlessMock.providers.aws.request.and.returnValue(new Promise(() => {}));
+      this.serverlessMock.providers.aws.request.and.returnValue(new Promise(() => { }));
       this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
       this.plugin.afterDeploy();
-      expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith('CloudFormation', 'describeStacks', { StackName: 'superstack'}, 'megastage', 'hyperregion');
+      expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith('CloudFormation', 'describeStacks', { StackName: 'superstack' }, 'megastage', 'hyperregion');
     });
 
     it('should build documentation with deploying and upload to api gateway', function (done) {
