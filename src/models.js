@@ -23,22 +23,17 @@ module.exports = {
 
   addMethodResponses: function addMethodResponses(resource, documentation) {
     if (documentation.methodResponses) {
-      if (resource.Properties.MethodResponses) {
-        resource.Properties.MethodResponses.forEach(originalResponse => {
-          documentation.methodResponses.forEach(response => {
-            if (originalResponse.StatusCode === response.statusCode) {
-              originalResponse.ResponseModels = response.responseModels;
-              this.addModelDependencies(originalResponse.ResponseModels, resource);
-            }
-          });
-        });
-      } else {
+      if (!resource.Properties.MethodResponses) {
         resource.Properties.MethodResponses = [];
+      }
 
-        documentation.methodResponses.forEach(response => {
-          const _response = {
+      documentation.methodResponses.forEach(response => {
+        let _response = resource.Properties.MethodResponses
+          .find(originalResponse => originalResponse.StatusCode === response.statusCode);
+
+        if (!_response) {
+          _response = {
             StatusCode: response.statusCode,
-            ResponseModels: response.responseModels
           };
 
           if (response.responseHeaders) {
@@ -49,10 +44,12 @@ module.exports = {
             _response.ResponseParameters = methodResponseHeaders;
           }
 
-          this.addModelDependencies(_response.ResponseModels, resource);
           resource.Properties.MethodResponses.push(_response);
-        });
-      }
+        }
+
+        _response.ResponseModels = response.responseModels;
+        this.addModelDependencies(_response.ResponseModels, resource);
+      });
     }
   },
 
