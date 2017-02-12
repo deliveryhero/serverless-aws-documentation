@@ -305,7 +305,7 @@ describe('ServerlessAWSDocumentation', function () {
       });
     });
 
-    it('should only add response methods whith existence MethodResponses to ApiGateway methods', function () {
+    it('should only add response methods with existing MethodResponses to ApiGateway methods', function () {
       this.serverlessMock.variables.service.custom.documentation.models = [];
       this.serverlessMock.service._functionNames = ['test'];
       this.serverlessMock.service._functions = {
@@ -343,10 +343,174 @@ describe('ServerlessAWSDocumentation', function () {
         Properties: {
           MethodResponses: [{
             StatusCode: 200,
+            id: 9001,
           },
           {
             StatusCode: 404,
+            id: 9002,
           }],
+        },
+      };
+
+      this.plugin.beforeDeploy();
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          somepath_post: {
+            some: 'configuration',
+            DependsOn: ['CreateResponseModel', 'ErrorResponseModel'],
+            Properties: {
+              MethodResponses: [{
+                StatusCode: 200,
+                id: 9001,
+                ResponseModels: {
+                  'application/json': 'CreateResponse',
+                },
+              },
+              {
+                StatusCode: 404,
+                id: 9002,
+                ResponseModels: {
+                  'application/json': 'ErrorResponse'
+                },
+              }],
+            },
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      });
+    });
+
+    it('should only add response methods with existing and new MethodResponses to ApiGateway methods', function () {
+      this.serverlessMock.variables.service.custom.documentation.models = [];
+      this.serverlessMock.service._functionNames = ['test'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+              cors: true,
+              private: true,
+              documentation: {
+                methodResponses: [
+                  {
+                    statusCode: 200,
+                    should: 'not be included',
+                    responseModels: {
+                      'application/json': 'CreateResponse',
+                    },
+                  },
+                  {
+                    statusCode: 404,
+                    should: 'not be included',
+                    responseModels: {
+                      'application/json': 'ErrorResponse'
+                    },
+                  },
+                ],
+              }
+            },
+          }],
+        },
+      };
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources;
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {
+          MethodResponses: [{
+            StatusCode: 200,
+            id: 9001,
+          },],
+        },
+      };
+
+      this.plugin.beforeDeploy();
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          somepath_post: {
+            some: 'configuration',
+            DependsOn: ['CreateResponseModel', 'ErrorResponseModel'],
+            Properties: {
+              MethodResponses: [{
+                StatusCode: 200,
+                id: 9001,
+                ResponseModels: {
+                  'application/json': 'CreateResponse',
+                },
+              },
+              {
+                StatusCode: 404,
+                ResponseModels: {
+                  'application/json': 'ErrorResponse'
+                },
+              }],
+            },
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      });
+    });
+
+    it('should only add response methods with existing empty MethodResponses to ApiGateway methods', function () {
+      this.serverlessMock.variables.service.custom.documentation.models = [];
+      this.serverlessMock.service._functionNames = ['test'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+              cors: true,
+              private: true,
+              documentation: {
+                methodResponses: [
+                  {
+                    statusCode: 200,
+                    responseModels: {
+                      'application/json': 'CreateResponse',
+                    },
+                  },
+                  {
+                    statusCode: 404,
+                    responseModels: {
+                      'application/json': 'ErrorResponse'
+                    },
+                  },
+                ],
+              }
+            },
+          }],
+        },
+      };
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources;
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {
+          MethodResponses: [],
         },
       };
 
