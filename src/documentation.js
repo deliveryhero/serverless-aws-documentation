@@ -1,5 +1,7 @@
 'use strict';
 
+const objectHash = require('object-hash');
+
 const documentationProperties = ['description', 'summary'];
 
 const globalDocumentationParts = require('./globalDocumentationParts.json');
@@ -23,6 +25,8 @@ function _mapToObj(map) {
 
   return returnObj;
 }
+
+var autoVersion;
 
 module.exports = function(AWS) {
   return {
@@ -55,6 +59,7 @@ module.exports = function(AWS) {
           console.info(msg);
           throw new Error(msg);
         }
+
         def.forEach((singleDef) => this._createDocumentationPart(part, singleDef, knownLocation));
       } else {
         this._createDocumentationPart(part, def, knownLocation);
@@ -73,7 +78,7 @@ module.exports = function(AWS) {
       const apiGateway = new AWS.APIGateway(this.serverless.providers.aws.getCredentials());
       return apiGateway.getDocumentationVersion({
         restApiId: this.restApiId,
-        documentationVersion: this.customVars.documentation.version,
+        documentationVersion: this.getDocumentationVersion(),
       }).promise()
         .then(() => {
           const msg = 'documentation version already exists, skipping upload';
@@ -104,7 +109,7 @@ module.exports = function(AWS) {
         }, Promise.resolve()))
         .then(() => apiGateway.createDocumentationVersion({
           restApiId: this.restApiId,
-          documentationVersion: this.customVars.documentation.version,
+          documentationVersion: this.getDocumentationVersion(),
           stageName: this.options.stage,
         }).promise());
     },
@@ -114,17 +119,50 @@ module.exports = function(AWS) {
       this.createDocumentationParts(globalDocumentationParts, globalDocumentation, {});
     },
 
+
     getFunctionDocumentationParts: function getFunctionDocumentationParts() {
-      this.serverless.service.getAllFunctions().forEach(functionName => {
-        const func = this.serverless.service.getFunction(functionName);
-        func.events.forEach(eventTypes => {
-          if (eventTypes.http && eventTypes.http.documentation) {
-            const path = eventTypes.http.path;
-            const method = eventTypes.http.method.toUpperCase();
-            this.createDocumentationParts(functionDocumentationParts, eventTypes.http, { path, method });
-          }
-        });
+      const httpEvents = this._getHttpEvents();
+      Object.keys(httpEvents).forEach(funcName => {
+        const httpEvent = httpEvents[funcName];
+        const path = httpEvent.path;
+        const method = httpEvent.method.toUpperCase();
+        this.createDocumentationParts(functionDocumentationParts, httpEvent, { path, method });
       });
+    },
+
+    _getHttpEvents: function _getHttpEvents() {
+      return this.serverless.service.getAllFunctions().reduce((documentationObj, functionName) => {
+        const func = this.serverless.service.getFunction(functionName);
+        const funcHttpEvent = func.events
+        .filter((eventTypes) => eventTypes.http && eventTypes.http.documentation)
+        .map((eventTypes) => eventTypes.http)[0];
+
+        if (funcHttpEvent) {
+          documentationObj[functionName] = funcHttpEvent;
+        }
+
+        return documentationObj;
+      }, {});
+    },
+
+    generateAutoDocumentationVersion: function generateAutoDocumentationVersion() {
+      const versionObject = {
+        globalDocs: this.customVars.documentation,
+        functionDocs: {},
+      }
+
+      const httpEvents = this._getHttpEvents();
+      Object.keys(httpEvents).forEach(funcName => {
+        versionObject.functionDocs[funcName] = httpEvents[funcName].documentation;
+      });
+
+      autoVersion = objectHash(versionObject);
+
+      return autoVersion;
+    },
+
+    getDocumentationVersion: function getDocumentationVersion() {
+      return this.customVars.documentation.version || autoVersion || this.generateAutoDocumentationVersion();
     },
 
     _buildDocumentation: function _buildDocumentation(result) {

@@ -57,7 +57,7 @@ class ServerlessAWSDocumentation {
   }
 
   afterDeploy() {
-    if (!this.customVars.documentation || !this.customVars.documentation.version) return;
+    if (!this.customVars.documentation) return;
     const stackName = this.serverless.providers.aws.naming.getStackName(this.options.stage);
     return this.serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
       this.options.stage,
