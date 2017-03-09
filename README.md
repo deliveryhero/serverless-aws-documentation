@@ -88,11 +88,11 @@ need the path of the described resource and models need the name of the model.
 ### Define the models
 
 Models have additional information you have to define. Besides the model name, the description and
-the summary, you need to define the *content type* for this model in addition to the *schema* that describes
-the model. Both are mandatory:
+the summary, you need to define the *content type* for this model in addition to the *schema* that
+describes the model:
 
 * `contentType`: the content type of the described request/response (like `"application/json"` or
-`"application/xml"`).
+`"application/xml"`). This is mandatory.
 * `schema`: The JSON Schema that describes the model. In the examples below external files are
 imported, but you can also define the schema inline using YAML format.
 
