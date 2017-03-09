@@ -8,7 +8,7 @@ documentation for API documentation).
 
 ## What is AWS API Gateway documentation?
 
-Amazon introduced a new documentation feature for it's API Gateway on AWS on December 1st. With this you can add manually written documentation to all parts of API Gateway such as resources, requests, responses or single path or query parameters. When exporting Swagger from API Gateway these documentation is added to the other information to create a more human understandable documentation. 
+Amazon introduced a new documentation feature for it's API Gateway on AWS on December 1st. With this you can add manually written documentation to all parts of API Gateway such as resources, requests, responses or single path or query parameters. When exporting Swagger from API Gateway these documentation is added to the other information to create a more human understandable documentation.
 
 In addition to this documentation this plugin also adds support to add models to API Gateway and use it with the serverless functions. Models are JSON Schemas that define the structure of request or response bodies. This includes property structure, their types and their validation. More about this you'll find here: https://spacetelescope.github.io/understanding-json-schema/
 
@@ -55,6 +55,7 @@ Your general documentation has to be nested in the custom variables section and 
 ```YAML
 custom:
   documentation:
+    version: '1'
     summary: 'My API'
     description: 'This is my API'
     authorizers:
@@ -75,6 +76,10 @@ documentation parts with the `description` and `summary` properties. The summary
 title and the description is for further explanation.
 
 On the upper level (directly in the `documentation` section) you describe your API in general.
+In there you also can manually describe the version (needs to be a string). If you don't define the
+version, the version that API Gateway needs will automatically be generated. This auto version is a
+hash of the documentation you defined, so if you don't change your documentation, the documentation
+in API Gateway won't be touched.
 Underneath you can define `authorizers`, `resources` and `models` which are all lists of descriptions.
 In addition to the description and the summary, Authorizers need the name of the authorizer, resources
 need the path of the described resource and models need the name of the model.
