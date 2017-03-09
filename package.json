@@ -19,6 +19,7 @@
     "proxyquire": "^1.7.10"
   },
   "dependencies": {
-    "aws-sdk": "^2.7.12"
+    "aws-sdk": "^2.7.12",
+    "object-hash": "^1.1.7"
   }
 }

@@ -1073,12 +1073,6 @@ describe('ServerlessAWSDocumentation', function () {
       expect(this.serverlessMock.providers.aws.request).not.toHaveBeenCalled();
     });
 
-    it('should not deploy documentation if there is no version defined for documentation', function () {
-      this.plugin.customVars.documentation = {};
-      this.plugin.afterDeploy();
-      expect(this.serverlessMock.providers.aws.request).not.toHaveBeenCalled();
-    });
-
     it('should get stack description', function () {
       this.optionsMock.stage = 'megastage';
       this.optionsMock.region = 'hyperregion';
@@ -1423,6 +1417,191 @@ describe('ServerlessAWSDocumentation', function () {
       });
     });
 
+    it('should generate documentation version when no version is there', function (done) {
+      spyOn(console, 'info');
+
+      this.serverlessMock.variables.service.custom.documentation.api = {
+        description: 'this is an api',
+      };
+      this.serverlessMock.variables.service.custom.documentation.authorizers = [{
+        name: 'an-authorizer',
+        description: 'this is an authorizer',
+      }, {
+        name: 'no-authorizer',
+        description: 'this is not an authorizer',
+      }];
+      this.serverlessMock.variables.service.custom.documentation.resources = [{
+        path: 'super/path',
+        description: 'this is a super path',
+      }, {
+        path: 'hidden/path',
+        description: 'this is a super secret hidden path',
+      }];
+
+      this.serverlessMock.service._functionNames = ['test', 'blub', 'blib', 'blab'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+              documentation: {
+                summary: 'hello',
+                description: 'hello hello',
+                unknownProperty: 'should not be displayed',
+                requestBody: {
+                  description: 'is it me',
+                },
+                requestHeaders: [{
+                  name: 'x-you',
+                  description: 'are looking for',
+                }, {
+                  name: 'x-hello',
+                  description: 'again',
+                }],
+                methodResponses: [
+                  {
+                    statusCode: '200',
+                    description: 'This is a good response',
+                    responseModels: {
+                      'application/json': 'CreateResponse',
+                    },
+                  },
+                  {
+                    statusCode: '400',
+                    description: 'You failed',
+                  },
+                  {
+                    statusCode: '404',
+                  },
+                ],
+              }
+            },
+          }],
+        },
+        blub: {
+          events: [{
+            http: {
+              path: 'some/other/path',
+              method: 'get',
+              documentation: {
+                queryParams: [{
+                  name: 'supername',
+                  description: 'this is your super name',
+                }, {
+                  name: 'not-supername',
+                  description: 'this is not your super name',
+                }],
+                pathParams: [{
+                  name: 'id',
+                  description: 'this is the id',
+                }, {
+                  name: 'super-id',
+                  description: 'this is the secret super id',
+                }],
+                methodResponses: [
+                  {
+                    statusCode: '204',
+                    description: 'super response',
+                    responseBody: {
+                      description: 'hiiiii',
+                    },
+                    responseHeaders: [{
+                      name: 'x-header',
+                      description: 'THE header',
+                    }, {
+                      name: 'x-other-header',
+                      description: 'THE other header',
+                    }],
+                  },
+                ],
+              },
+            },
+          }],
+        },
+        blab: {
+          events: [{
+            http: {
+              path: 'some/other/path',
+              method: 'get',
+            },
+          }],
+        },
+        blib: {
+          events: [{
+            sns: {
+              documentation: {},
+            },
+          }],
+        },
+      };
+
+      spyOn(this.plugin, 'generateAutoDocumentationVersion').and.callThrough();
+
+      this.optionsMock.stage = 'megastage';
+      this.optionsMock.region = 'hyperregion';
+      this.serverlessMock.providers.aws.request.and.returnValue(Promise.resolve({
+        Stacks: [{
+          Outputs: [{
+            OutputKey: 'ApiKey',
+            OutputValue: 'nothing',
+          }, {
+            OutputKey: 'AwsDocApiId',
+            OutputValue: 'superid',
+          }],
+        }],
+      }));
+
+      delete this.serverlessMock.variables.service.custom.documentation.version;
+      this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
+      this.serverlessMock.providers.aws.getCredentials.and.returnValue('awesome credentials');
+      this.apiGatewayMock.getDocumentationParts.and.returnValue({
+        promise: () => Promise.resolve({
+          items: [{
+            id: '123',
+          }, {
+            id: '456',
+          }],
+        }),
+      });
+      this.apiGatewayMock.deleteDocumentationPart.and.returnValue({
+        promise: () => Promise.resolve(),
+      });
+      this.apiGatewayMock.createDocumentationPart.and.returnValue({
+        promise: () => Promise.resolve(),
+      });
+      this.apiGatewayMock.getDocumentationVersion.and.returnValue({
+        promise: () => Promise.reject(new Error('Invalid Documentation version specified')),
+      });
+
+      this.apiGatewayMock.createDocumentationVersion.and.returnValue({
+        promise: () => Promise.resolve(),
+      });
+
+      this.plugin.afterDeploy().then(() => {
+        expect(this.apiGatewayMock.getDocumentationParts).toHaveBeenCalled();
+        expect(this.apiGatewayMock.deleteDocumentationPart).toHaveBeenCalled();
+        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalled();
+        expect(this.apiGatewayMock.getDocumentationVersion).toHaveBeenCalledTimes(1);
+        expect(this.apiGatewayMock.getDocumentationVersion).toHaveBeenCalledWith({
+          restApiId: 'superid',
+          documentationVersion: jasmine.any(String),
+        });
+
+        const getDocVersion = this.apiGatewayMock.getDocumentationVersion.calls.argsFor(0)[0].documentationVersion;
+        expect(this.apiGatewayMock.createDocumentationVersion).toHaveBeenCalledTimes(1);
+        expect(this.apiGatewayMock.createDocumentationVersion).toHaveBeenCalledWith({
+          restApiId: 'superid',
+          documentationVersion: getDocVersion,
+          stageName: 'megastage',
+        });
+
+        expect(this.plugin.generateAutoDocumentationVersion).toHaveBeenCalledTimes(1);
+
+        done();
+      });
+    });
+
     it('should build documentation without deploying and display parts', function (done) {
       this.optionsMock.noDeploy = true;
       spyOn(console, 'info');
@@ -1507,6 +1686,153 @@ describe('ServerlessAWSDocumentation', function () {
         expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalled();
         done();
       });
+    });
+
+    it('should generate different documentation versions for different documentation content', function() {
+      this.serverlessMock.variables.service.custom.documentation.api = {
+        description: 'this is an api',
+      };
+      this.serverlessMock.variables.service.custom.documentation.authorizers = [{
+        name: 'an-authorizer',
+        description: 'this is an authorizer',
+      }, {
+        name: 'no-authorizer',
+        description: 'this is not an authorizer',
+      }];
+      this.serverlessMock.variables.service.custom.documentation.resources = [{
+        path: 'super/path',
+        description: 'this is a super path',
+      }, {
+        path: 'hidden/path',
+        description: 'this is a super secret hidden path',
+      }];
+
+      this.serverlessMock.service._functionNames = ['test', 'blub', 'blib', 'blab'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+              documentation: {
+                summary: 'hello',
+                description: 'hello hello',
+                unknownProperty: 'should not be displayed',
+                requestBody: {
+                  description: 'is it me',
+                },
+                requestHeaders: [{
+                  name: 'x-you',
+                  description: 'are looking for',
+                }, {
+                  name: 'x-hello',
+                  description: 'again',
+                }],
+                methodResponses: [
+                  {
+                    statusCode: '200',
+                    description: 'This is a good response',
+                    responseModels: {
+                      'application/json': 'CreateResponse',
+                    },
+                  },
+                  {
+                    statusCode: '400',
+                    description: 'You failed',
+                  },
+                  {
+                    statusCode: '404',
+                  },
+                ],
+              }
+            },
+          }],
+        },
+        blub: {
+          events: [{
+            http: {
+              path: 'some/other/path',
+              method: 'get',
+              documentation: {
+                queryParams: [{
+                  name: 'supername',
+                  description: 'this is your super name',
+                }, {
+                  name: 'not-supername',
+                  description: 'this is not your super name',
+                }],
+                pathParams: [{
+                  name: 'id',
+                  description: 'this is the id',
+                }, {
+                  name: 'super-id',
+                  description: 'this is the secret super id',
+                }],
+                methodResponses: [
+                  {
+                    statusCode: '204',
+                    description: 'super response',
+                    responseBody: {
+                      description: 'hiiiii',
+                    },
+                    responseHeaders: [{
+                      name: 'x-header',
+                      description: 'THE header',
+                    }, {
+                      name: 'x-other-header',
+                      description: 'THE other header',
+                    }],
+                  },
+                ],
+              },
+            },
+          }],
+        },
+        blab: {
+          events: [{
+            http: {
+              path: 'some/other/path',
+              method: 'get',
+            },
+          }],
+        },
+        blib: {
+          events: [{
+            sns: {
+              documentation: {},
+            },
+          }],
+        },
+      };
+
+      delete this.serverlessMock.variables.service.custom.documentation.version;
+
+      this.plugin.generateAutoDocumentationVersion();
+      const v1 = this.plugin.getDocumentationVersion();
+
+      // change the global documentation content
+      delete this.serverlessMock.variables.service.custom.documentation.api;
+      this.plugin.generateAutoDocumentationVersion();
+      const v2 = this.plugin.getDocumentationVersion();
+      expect(v2).not.toBe(v1);
+
+      // change the function documentation content
+      this.serverlessMock.service._functions.blub.events[0].http.documentation.methodResponses[0].statusCode = '201';
+      this.plugin.generateAutoDocumentationVersion();
+      const v3 = this.plugin.getDocumentationVersion();
+      expect(v3).not.toBe(v2);
+
+      // add function without documentation for event, should not generate new version
+      this.serverlessMock.service._functions.sup = {
+        events: [{
+          http: {
+          },
+        }],
+      };
+
+      this.plugin.generateAutoDocumentationVersion();
+      const v4 = this.plugin.getDocumentationVersion();
+      expect(v4).toBe(v3);
     });
 
   });
