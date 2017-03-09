@@ -10,7 +10,7 @@ module.exports = {
         },
         ContentType: model.contentType,
         Name: model.name,
-        Schema: model.schema,
+        Schema: model.schema || {},
       },
     };
   },

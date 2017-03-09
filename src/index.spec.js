@@ -107,6 +107,13 @@ describe('ServerlessAWSDocumentation', function () {
     });
 
     it('should add models but not add them to http events', function () {
+      // also add a model with no schema
+      this.serverlessMock.variables.service.custom.documentation.models.push({
+        name: 'NoSchemaModel',
+        contentType: 'application/json',
+        description: 'the other test model schema',
+      });
+
       this.plugin.beforeDeploy();
       expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
         Resources: {
@@ -130,6 +137,17 @@ describe('ServerlessAWSDocumentation', function () {
               ContentType: 'application/json',
               Name: 'OtherModel',
               Schema: 'some even more complex schema',
+            },
+          },
+          NoSchemaModelModel: {
+            Type: 'AWS::ApiGateway::Model',
+            Properties: {
+              RestApiId: {
+                Ref: 'ApiGatewayRestApi',
+              },
+              ContentType: 'application/json',
+              Name: 'NoSchemaModel',
+              Schema: {},
             },
           },
           ExistingResource: {
