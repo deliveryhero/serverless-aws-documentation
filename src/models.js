@@ -47,8 +47,10 @@ module.exports = {
           resource.Properties.MethodResponses.push(_response);
         }
 
-        _response.ResponseModels = response.responseModels;
-        this.addModelDependencies(_response.ResponseModels, resource);
+        if (response.responseModels) {
+          _response.ResponseModels = response.responseModels;
+          this.addModelDependencies(_response.ResponseModels, resource);
+        }
       });
     }
   },
