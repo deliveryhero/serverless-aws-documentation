@@ -62,6 +62,19 @@ module.exports = {
     }
   },
 
+  addRequestHeaders: function addRequestHeaders(resource, documentation) {
+    if (documentation.requestHeaders && Object.keys(documentation.requestHeaders).length > 0) {
+      //this.addModelDependencies(documentation.requestModels, resource);
+      if (!resource.Properties.RequestParameters) {
+        resource.Properties.RequestParameters = {};
+      }
+      documentation.requestHeaders.forEach(function(rh){
+        var source = 'method.request.header.'+rh.name;
+        resource.Properties.RequestParameters[source] = rh.required || false;
+      })
+    }
+  },
+
   updateCfTemplateFromHttp: function updateCfTemplateFromHttp(eventTypes) {
     if (eventTypes.http && eventTypes.http.documentation) {
       const resourceName = this.normalizePath(eventTypes.http.path);
@@ -71,6 +84,7 @@ module.exports = {
       resource.DependsOn = new Set();
       this.addMethodResponses(resource, eventTypes.http.documentation);
       this.addRequestModels(resource, eventTypes.http.documentation);
+      this.addRequestHeaders(resource, eventTypes.http.documentation);
       resource.DependsOn = Array.from(resource.DependsOn);
       if (resource.DependsOn.length === 0) {
         delete resource.DependsOn;
