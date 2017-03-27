@@ -185,12 +185,12 @@ module.exports = function(AWS) {
 
     addRequestHeaders: function addRequestHeaders(resource, documentation) {
       if (documentation.requestHeaders && Object.keys(documentation.requestHeaders).length > 0) {
-        //this.addModelDependencies(documentation.requestModels, resource);
         if (!resource.Properties.RequestParameters) {
           resource.Properties.RequestParameters = {};
         }
         documentation.requestHeaders.forEach(function(rh){
           var source = 'method.request.header.'+rh.name;
+          if (resource.Properties.RequestParameters.hasOwnProperty(source)) return; // don't mess with existing config
           resource.Properties.RequestParameters[source] = rh.required || false;
         })
       }
