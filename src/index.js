@@ -29,17 +29,19 @@ class ServerlessAWSDocumentation {
   }
 
   beforeDeploy() {
-    if (!(this.customVars && this.customVars.documentation && this.customVars.documentation.models)) return;
+    if (!(this.customVars && this.customVars.documentation)) return;
 
     this.cfTemplate = this.serverless.service.provider.compiledCloudFormationTemplate;
 
-    // Add model resources
-    const models = this.customVars.documentation.models.map(this.createCfModel)
-      .reduce((modelObj, model) => {
-        modelObj[`${model.Properties.Name}Model`] = model;
-        return modelObj;
-      }, {});
-    Object.assign(this.cfTemplate.Resources, models);
+    if (this.customVars.documentation.models) {
+      // Add model resources
+      const models = this.customVars.documentation.models.map(this.createCfModel)
+        .reduce((modelObj, model) => {
+          modelObj[`${model.Properties.Name}Model`] = model;
+          return modelObj;
+        }, {});
+      Object.assign(this.cfTemplate.Resources, models);
+    }
 
     // Add models to method resources
     this.serverless.service.getAllFunctions().forEach(functionName => {
