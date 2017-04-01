@@ -100,10 +100,25 @@ describe('ServerlessAWSDocumentation', function () {
       expect(this.serverlessMock.service.getAllFunctions).not.toHaveBeenCalled();
     });
 
-    it('shouldn\'t do anything if there are no models in custom variables', function () {
+    it('should work even if there are no models in custom variables', function () {
       delete this.plugin.customVars.documentation.models;
       this.plugin.beforeDeploy();
-      expect(this.serverlessMock.service.getAllFunctions).not.toHaveBeenCalled();
+      expect(this.serverlessMock.service.getAllFunctions).toHaveBeenCalled();
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      });
     });
 
     it('should add models but not add them to http events', function () {
