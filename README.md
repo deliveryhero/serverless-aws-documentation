@@ -223,7 +223,16 @@ in a the context of the documenatation.
 
 ### Deploy the documenatation
 
-To deploy the models you described above you just need to use `serverless deploy` as you are used to.
+To deploy the models you described above you just need to use `serverless deploy` as you are used to. If you've defined `requestHeaders` in your documentation this will add those request headers to the CloudFormation being deployed. If you don't want this, add the option `--doc-safe-mode` when deploying. If you use that option you need to define the request headers manually for them to be included in the documentation, e.g.
+
+```YAML
+ApiGatewayMethod{normalizedPath}{normalizedMethod}:
+  Properties:
+    RequestParameters:
+      method.request.header.{header-name}: true|false
+```
+
+See the Serverless documentation for more information on [resource naming](https://serverless.com/framework/docs/providers/aws/guide/resources/), and the AWS documentation for more information on [request parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration.html#cfn-apigateway-method-integration-requestparameters).
 
 ## Coming soon
 
