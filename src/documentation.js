@@ -205,7 +205,9 @@ module.exports = function(AWS) {
         resource.DependsOn = new Set();
         this.addMethodResponses(resource, eventTypes.http.documentation);
         this.addRequestModels(resource, eventTypes.http.documentation);
-        this.addRequestHeaders(resource, eventTypes.http.documentation);
+        if (!this.options['doc-safe-mode']) {
+          this.addRequestHeaders(resource, eventTypes.http.documentation);
+        }
         resource.DependsOn = Array.from(resource.DependsOn);
         if (resource.DependsOn.length === 0) {
           delete resource.DependsOn;
