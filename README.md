@@ -223,7 +223,9 @@ in a the context of the documenatation.
 
 ### Deploy the documenatation
 
-To deploy the models you described above you just need to use `serverless deploy` as you are used to. If you've defined `requestHeaders` in your documentation this will add those request headers to the CloudFormation being deployed. If you don't want this, add the option `--doc-safe-mode` when deploying. If you use that option you need to define the request headers manually for them to be included in the documentation, e.g.
+To deploy the models you described above you just need to use `serverless deploy` as you are used to.
+
+If you've defined `requestHeaders` in your documentation this will add those request headers to the CloudFormation being deployed, if you haven't already defined those request parameters yourself. If you don't want this, add the option `--doc-safe-mode` when deploying. If you use that option you need to define the request parameters manually to  have them included in the documentation, e.g.
 
 ```YAML
 ApiGatewayMethod{normalizedPath}{normalizedMethod}:
