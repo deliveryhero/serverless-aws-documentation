@@ -1086,6 +1086,74 @@ describe('ServerlessAWSDocumentation', function () {
         },
       });
     });
+    it('should not add request headers in safe mode', function() {
+      this.optionsMock = {'doc-safe-mode': true};
+      this.plugin = new ServerlessAWSDocumentation(this.serverlessMock, this.optionsMock);
+      this.serverlessMock.variables.service.custom.documentation.models = [];
+      this.serverlessMock.service._functionNames = ['test', 'blub'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+              documentation: {
+                requestHeaders: [
+                  {
+                    name: 'x-my-header',
+                    description: 'x-my-header description'
+                  }
+                ]
+              }
+            },
+          }],
+        },
+        blub: {
+          events: [{
+            http: {
+              path: 'some/other/path',
+              method: 'get'
+            },
+          }],
+        },
+      };
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources;
+      resources.someotherpath_get = {
+        some: 'other_configuration',
+        Properties: {},
+      };
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {},
+      };
+
+      this.plugin.beforeDeploy();
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          somepath_post: {
+            some: 'configuration',
+            Properties: {},
+          },
+          someotherpath_get: {
+            some: 'other_configuration',
+            Properties: {},
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      });
+    });
     it('should add request headers', function() {
       this.serverlessMock.variables.service.custom.documentation.models = [];
       this.serverlessMock.service._functionNames = ['test', 'blub'];
