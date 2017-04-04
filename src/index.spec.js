@@ -1086,7 +1086,7 @@ describe('ServerlessAWSDocumentation', function () {
         },
       });
     });
-    it('should not add request headers in safe mode', function() {
+    it('should not add request headers and query parameters in safe mode', function() {
       this.optionsMock = {'doc-safe-mode': true};
       this.plugin = new ServerlessAWSDocumentation(this.serverlessMock, this.optionsMock);
       this.serverlessMock.variables.service.custom.documentation.models = [];
@@ -1103,7 +1103,13 @@ describe('ServerlessAWSDocumentation', function () {
                     name: 'x-my-header',
                     description: 'x-my-header description'
                   }
-                ]
+                ],
+                queryParams: [
+                  {
+                    name: 'super-param',
+                    description: 'x-my-header description'
+                  }
+                ],
               }
             },
           }],
@@ -1154,7 +1160,8 @@ describe('ServerlessAWSDocumentation', function () {
         },
       });
     });
-    it('should add request headers', function() {
+
+    it('should add request headers and query parameters', function() {
       this.serverlessMock.variables.service.custom.documentation.models = [];
       this.serverlessMock.service._functionNames = ['test', 'blub'];
       this.serverlessMock.service._functions = {
@@ -1164,11 +1171,17 @@ describe('ServerlessAWSDocumentation', function () {
               path: 'some/path',
               method: 'post',
               documentation: {
+                queryParams: [
+                  {
+                    name: 'my-param',
+                    description: 'my-param description',
+                  },
+                ],
                 requestHeaders: [
                   {
                     name: 'x-my-header',
-                    description: 'x-my-header description'
-                  }
+                    description: 'x-my-header description',
+                  },
                 ]
               }
             },
@@ -1205,7 +1218,8 @@ describe('ServerlessAWSDocumentation', function () {
             some: 'configuration',
             Properties: {
               RequestParameters: {
-                'method.request.header.x-my-header': false
+                'method.request.header.x-my-header': false,
+                'method.request.querystring.my-param': false,
               }
             },
           },
@@ -1224,7 +1238,8 @@ describe('ServerlessAWSDocumentation', function () {
         },
       });
     });
-    it('should add request headers with required=false by default', function() {
+
+    it('should add request headers and query parameters with required=false by default', function() {
       this.serverlessMock.variables.service.custom.documentation.models = [];
       this.serverlessMock.service._functionNames = ['test', 'blub'];
       this.serverlessMock.service._functions = {
@@ -1234,16 +1249,27 @@ describe('ServerlessAWSDocumentation', function () {
               path: 'some/path',
               method: 'post',
               documentation: {
+                queryParams: [
+                  {
+                    name: 'my-param',
+                    description: 'my-param description',
+                    required: true,
+                  },
+                  {
+                    name: 'my-param2',
+                    description: 'my-param2 description',
+                  },
+                ],
                 requestHeaders: [
                   {
                     name: 'x-my-header',
                     description: 'x-my-header description',
-                    required: true
+                    required: true,
                   },
                   {
                     name: 'x-my-header2',
-                    description: 'x-my-header2 description'
-                  }
+                    description: 'x-my-header2 description',
+                  },
                 ]
               }
             },
@@ -1281,7 +1307,9 @@ describe('ServerlessAWSDocumentation', function () {
             Properties: {
               RequestParameters: {
                 'method.request.header.x-my-header': true,
-                'method.request.header.x-my-header2': false
+                'method.request.header.x-my-header2': false,
+                'method.request.querystring.my-param': true,
+                'method.request.querystring.my-param2': false,
               }
             },
           },
@@ -1300,7 +1328,7 @@ describe('ServerlessAWSDocumentation', function () {
         },
       });
     });
-    it('should only add request headers, not modify existing', function() {
+    it('should only add request headers and query parameters, not modify existing', function() {
       this.serverlessMock.variables.service.custom.documentation.models = [];
       this.serverlessMock.service._functionNames = ['test', 'blub'];
       this.serverlessMock.service._functions = {
@@ -1310,12 +1338,18 @@ describe('ServerlessAWSDocumentation', function () {
               path: 'some/path',
               method: 'post',
               documentation: {
+                queryParams: [
+                  {
+                    name: 'my-param',
+                    description: 'my-param description',
+                  },
+                ],
                 requestHeaders: [
                   {
                     name: 'x-my-header',
-                    description: 'x-my-header description'
-                  }
-                ]
+                    description: 'x-my-header description',
+                  },
+                ],
               }
             },
           }],
@@ -1339,8 +1373,9 @@ describe('ServerlessAWSDocumentation', function () {
         some: 'configuration',
         Properties: {
           RequestParameters: {
-            'method.request.header.x-my-header': true
-          }
+            'method.request.header.x-my-header': true,
+            'method.request.querystring.my-param': true,
+          },
         },
       };
 
@@ -1355,7 +1390,8 @@ describe('ServerlessAWSDocumentation', function () {
             some: 'configuration',
             Properties: {
               RequestParameters: {
-                'method.request.header.x-my-header': true
+                'method.request.header.x-my-header': true,
+                'method.request.querystring.my-param': true,
               }
             },
           },
