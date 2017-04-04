@@ -60,21 +60,6 @@ module.exports = {
       this.addModelDependencies(documentation.requestModels, resource);
       resource.Properties.RequestModels = documentation.requestModels;
     }
-  },
+  }
 
-  updateCfTemplateFromHttp: function updateCfTemplateFromHttp(eventTypes) {
-    if (eventTypes.http && eventTypes.http.documentation) {
-      const resourceName = this.normalizePath(eventTypes.http.path);
-      const methodLogicalId = this.getMethodLogicalId(resourceName, eventTypes.http.method);
-      const resource = this.cfTemplate.Resources[methodLogicalId];
-
-      resource.DependsOn = new Set();
-      this.addMethodResponses(resource, eventTypes.http.documentation);
-      this.addRequestModels(resource, eventTypes.http.documentation);
-      resource.DependsOn = Array.from(resource.DependsOn);
-      if (resource.DependsOn.length === 0) {
-        delete resource.DependsOn;
-      }
-    }
-  },
 };
