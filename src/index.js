@@ -1,7 +1,6 @@
 'use strict';
 const documentation = require('./documentation');
 const models = require('./models');
-const aws = require('./aws.js')();
 
 class ServerlessAWSDocumentation {
   constructor(serverless, options) {
@@ -10,7 +9,7 @@ class ServerlessAWSDocumentation {
     this.provider = 'aws'
 
     Object.assign(this, models);
-    Object.assign(this, documentation(aws));
+    Object.assign(this, documentation());
 
     this.customVars = this.serverless.variables.service.custom;
     const naming = this.serverless.providers.aws.naming;

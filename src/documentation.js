@@ -28,7 +28,7 @@ function _mapToObj(map) {
 
 var autoVersion;
 
-module.exports = function(AWS) {
+module.exports = function() {
   return {
     _createDocumentationPart: function _createDocumentationPart(part, def, knownLocation) {
       const location = part.locationProps.reduce((loc, property) => {
@@ -75,12 +75,11 @@ module.exports = function(AWS) {
     },
 
     _updateDocumentation: function _updateDocumentation() {
-      const apiGateway = new AWS.APIGateway(this.serverless.providers.aws.getCredentials());
-      return apiGateway.getDocumentationVersion({
+      const aws = this.serverless.providers.aws;
+      return aws.request('APIGateway', 'getDocumentationVersion', {
         restApiId: this.restApiId,
         documentationVersion: this.getDocumentationVersion(),
-      }).promise()
-        .then(() => {
+      }).then(() => {
           const msg = 'documentation version already exists, skipping upload';
           console.info('-------------------');
           console.info(msg);
@@ -92,26 +91,30 @@ module.exports = function(AWS) {
 
           return Promise.reject(err);
         })
-        .then(() => apiGateway.getDocumentationParts({
-          restApiId: this.restApiId,
-          limit: 9999,
-        }).promise())
-        .then(results => results.items.map(part => apiGateway.deleteDocumentationPart({
-          documentationPartId: part.id,
-          restApiId: this.restApiId,
-        }).promise()))
+        .then(() =>
+          aws.request('APIGateway', 'getDocumentationParts', {
+            restApiId: this.restApiId,
+            limit: 9999,
+          })
+        )
+        .then(results => results.items.map(
+          part => aws.request('APIGateway', 'deleteDocumentationPart', {
+            documentationPartId: part.id,
+            restApiId: this.restApiId,
+          })
+        ))
         .then(promises => Promise.all(promises))
         .then(() => this.documentationParts.reduce((promise, part) => {
           return promise.then(() => {
             part.properties = JSON.stringify(part.properties);
-            return apiGateway.createDocumentationPart(part).promise();
+            return aws.request('APIGateway', 'createDocumentationPart', part);
           });
         }, Promise.resolve()))
-        .then(() => apiGateway.createDocumentationVersion({
+        .then(() => aws.request('APIGateway', 'createDocumentationVersion', {
           restApiId: this.restApiId,
           documentationVersion: this.getDocumentationVersion(),
           stageName: this.options.stage,
-        }).promise());
+        }));
     },
 
     getGlobalDocumentationParts: function getGlobalDocumentationParts() {

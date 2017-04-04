@@ -1,6 +1,6 @@
 {
   "name": "serverless-aws-documentation",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Serverless 1.0 plugin to add documentation and models to the serverless generated API Gateway",
   "main": "src/index.js",
   "scripts": {
@@ -15,11 +15,9 @@
     "codecov": "^1.0.1",
     "eslint": "^3.11.1",
     "istanbul": "^0.4.5",
-    "jasmine": "^2.5.2",
-    "proxyquire": "^1.7.10"
+    "jasmine": "^2.5.2"
   },
   "dependencies": {
-    "aws-sdk": "^2.7.12",
     "object-hash": "^1.1.7"
   }
 }
