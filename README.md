@@ -36,7 +36,7 @@ To verify that the plugin was added successfully, run this in your command line:
 serverless
 ```
 
-The plugin should show up in the "Plugins" section of the output as "ServerlessAwsModels"
+The plugin should show up in the "Plugins" section of the output as "ServerlessAWSDocumentation"
 
 ## Usage
 
