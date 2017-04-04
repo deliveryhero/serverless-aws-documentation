@@ -183,16 +183,17 @@ module.exports = function(AWS) {
       return this._updateDocumentation();
     },
 
-    addRequestHeaders: function addRequestHeaders(resource, documentation) {
-      if (documentation.requestHeaders && Object.keys(documentation.requestHeaders).length > 0) {
+    addDocumentationToApiGateway: function addDocumentationToApiGateway(resource, documentationPart, mapPath) {
+      if (documentationPart && Object.keys(documentationPart).length > 0) {
         if (!resource.Properties.RequestParameters) {
           resource.Properties.RequestParameters = {};
         }
-        documentation.requestHeaders.forEach(function(rh){
-          var source = 'method.request.header.'+rh.name;
+
+        documentationPart.forEach(function(qp) {
+          const source = `method.request.${mapPath}.${qp.name}`;
           if (resource.Properties.RequestParameters.hasOwnProperty(source)) return; // don't mess with existing config
-          resource.Properties.RequestParameters[source] = rh.required || false;
-        })
+          resource.Properties.RequestParameters[source] = qp.required || false;
+        });
       }
     },
 
@@ -206,7 +207,16 @@ module.exports = function(AWS) {
         this.addMethodResponses(resource, eventTypes.http.documentation);
         this.addRequestModels(resource, eventTypes.http.documentation);
         if (!this.options['doc-safe-mode']) {
-          this.addRequestHeaders(resource, eventTypes.http.documentation);
+          this.addDocumentationToApiGateway(
+            resource,
+            eventTypes.http.documentation.requestHeaders,
+            'header'
+          );
+          this.addDocumentationToApiGateway(
+            resource,
+            eventTypes.http.documentation.queryParams,
+            'querystring'
+          );
         }
         resource.DependsOn = Array.from(resource.DependsOn);
         if (resource.DependsOn.length === 0) {
