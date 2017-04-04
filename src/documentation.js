@@ -185,6 +185,10 @@ module.exports = function(AWS) {
 
     addDocumentationToApiGateway: function addDocumentationToApiGateway(resource, documentationPart, mapPath) {
       if (documentationPart && Object.keys(documentationPart).length > 0) {
+        if (!resource.Properties.RequestParameters) {
+          resource.Properties.RequestParameters = {};
+        }
+
         documentationPart.forEach(function(qp) {
           const source = `method.request.${mapPath}.${qp.name}`;
           if (resource.Properties.RequestParameters.hasOwnProperty(source)) return; // don't mess with existing config
@@ -203,10 +207,6 @@ module.exports = function(AWS) {
         this.addMethodResponses(resource, eventTypes.http.documentation);
         this.addRequestModels(resource, eventTypes.http.documentation);
         if (!this.options['doc-safe-mode']) {
-          if (!resource.Properties.RequestParameters) {
-            resource.Properties.RequestParameters = {};
-          }
-
           this.addDocumentationToApiGateway(
             resource,
             eventTypes.http.documentation.requestHeaders,
@@ -217,12 +217,6 @@ module.exports = function(AWS) {
             eventTypes.http.documentation.queryParams,
             'querystring'
           );
-
-          // if (eventTypes.http.documentation.requestBody) {
-          //   const source = 'method.request.body';
-          //   if (resource.Properties.RequestParameters.hasOwnProperty(source)) return;
-          //   resource.Properties.RequestParameters[source] = {};
-          // }
         }
         resource.DependsOn = Array.from(resource.DependsOn);
         if (resource.DependsOn.length === 0) {
