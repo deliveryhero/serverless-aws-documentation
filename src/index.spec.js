@@ -1,13 +1,6 @@
-const proxyquire = require('proxyquire');
-
 describe('ServerlessAWSDocumentation', function () {
-  const awsMock = {
-    APIGateway: {}
-  };
 
-  const ServerlessAWSDocumentation = proxyquire('./index.js', {
-    './aws.js': () => awsMock,
-  });
+  const ServerlessAWSDocumentation = require('./index.js');
 
   beforeEach(function () {
     this.serverlessMock = {
@@ -1413,17 +1406,6 @@ describe('ServerlessAWSDocumentation', function () {
   });
 
   describe('after deploy', function () {
-    beforeEach(function () {
-      this.apiGatewayMock = jasmine.createSpyObj([
-        'getDocumentationParts',
-        'deleteDocumentationPart',
-        'createDocumentationPart',
-        'getDocumentationVersion',
-        'createDocumentationVersion',
-      ])
-      awsMock.APIGateway = jasmine.createSpy('API Gateway').and.returnValue(this.apiGatewayMock);
-    });
-
     it('should not deploy documentation if there is no documentation in custom variables', function () {
       this.plugin.customVars = {};
       this.plugin.afterDeploy();
@@ -1558,169 +1540,276 @@ describe('ServerlessAWSDocumentation', function () {
 
       this.optionsMock.stage = 'megastage';
       this.optionsMock.region = 'hyperregion';
-      this.serverlessMock.providers.aws.request.and.returnValue(Promise.resolve({
-        Stacks: [{
-          Outputs: [{
-            OutputKey: 'ApiKey',
-            OutputValue: 'nothing',
-          }, {
-            OutputKey: 'AwsDocApiId',
-            OutputValue: 'superid',
-          }],
-        }],
-      }));
       this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
-      this.serverlessMock.providers.aws.getCredentials.and.returnValue('awesome credentials');
-      this.apiGatewayMock.getDocumentationParts.and.returnValue({
-        promise: () => Promise.resolve({
-          items: [{
-            id: '123',
-          }, {
-            id: '456',
-          }],
-        }),
-      });
-      this.apiGatewayMock.deleteDocumentationPart.and.returnValue({
-        promise: () => Promise.resolve(),
-      });
-      this.apiGatewayMock.createDocumentationPart.and.returnValue({
-        promise: () => Promise.resolve(),
-      });
-
-      this.apiGatewayMock.getDocumentationVersion.and.returnValue({
-        promise: () => Promise.reject(new Error('Invalid Documentation version specified')),
-      });
-
-      this.apiGatewayMock.createDocumentationVersion.and.returnValue({
-        promise: () => Promise.resolve(),
+      this.serverlessMock.providers.aws.request.and.callFake((api, method) => {
+        switch (method) {
+          case 'describeStacks':
+            return Promise.resolve({
+              Stacks: [{
+                Outputs: [{
+                  OutputKey: 'ApiKey',
+                  OutputValue: 'nothing',
+                }, {
+                  OutputKey: 'AwsDocApiId',
+                  OutputValue: 'superid',
+                }],
+              }],
+            });
+          case 'getDocumentationParts':
+            return Promise.resolve({
+              items: [{
+                id: '123',
+              }, {
+                id: '456',
+              }],
+            });
+          case 'getDocumentationVersion':
+            return Promise.reject(new Error('Invalid Documentation version specified'));
+          default:
+            return Promise.resolve();
+        }
       });
 
       this.plugin.afterDeploy();
       setTimeout(() => {
-        expect(awsMock.APIGateway).toHaveBeenCalledWith('awesome credentials');
-        expect(this.apiGatewayMock.getDocumentationParts).toHaveBeenCalledWith({
-          restApiId: 'superid',
-          limit: 9999,
-        });
+        // 23
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'getDocumentationParts',
+          {
+            restApiId: 'superid',
+            limit: 9999,
+          }
+        );
 
         // Delete documentation parts
-        expect(this.apiGatewayMock.deleteDocumentationPart).toHaveBeenCalledTimes(2);
-        expect(this.apiGatewayMock.deleteDocumentationPart).toHaveBeenCalledWith({
-          documentationPartId: '123',
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.deleteDocumentationPart).toHaveBeenCalledWith({
-          documentationPartId: '456',
-          restApiId: 'superid',
-        });
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'deleteDocumentationPart',
+          {
+            documentationPartId: '123',
+            restApiId: 'superid',
+          }
+        );
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'deleteDocumentationPart',
+          {
+            documentationPartId: '456',
+            restApiId: 'superid',
+          }
+        );
 
         // Create documentation parts
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledTimes(21);
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { type: 'API' },
-          properties: JSON.stringify({ description: 'this is an api' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { type: 'AUTHORIZER', name: 'an-authorizer' },
-          properties: JSON.stringify({ description: 'this is an authorizer' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { type: 'AUTHORIZER', name: 'no-authorizer' },
-          properties: JSON.stringify({ description: 'this is not an authorizer' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { type: 'RESOURCE', path: 'super/path' },
-          properties: JSON.stringify({ description: 'this is a super path' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { type: 'RESOURCE', path: 'hidden/path' },
-          properties: JSON.stringify({ description: 'this is a super secret hidden path' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { name: 'TestModel', type: 'MODEL' },
-          properties: JSON.stringify({ description: 'the test model schema' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { name: 'OtherModel', type: 'MODEL' },
-          properties: JSON.stringify({ description: 'the other test model schema' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/path', method: 'POST', type: 'METHOD' },
-          properties: JSON.stringify({ description: 'hello hello', summary: 'hello' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/path', method: 'POST', type: 'REQUEST_BODY' },
-          properties: JSON.stringify({ description: 'is it me' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/path', method: 'POST', type: 'REQUEST_HEADER', name: 'x-you' },
-          properties: JSON.stringify({ description: 'are looking for' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/path', method: 'POST', type: 'REQUEST_HEADER', name: 'x-hello' },
-          properties: JSON.stringify({ description: 'again' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/path', method: 'POST', statusCode: '200', type: 'RESPONSE' },
-          properties: JSON.stringify({ description: 'This is a good response' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/path', method: 'POST', statusCode: '400', type: 'RESPONSE' },
-          properties: JSON.stringify({ description: 'You failed' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/other/path', method: 'GET', statusCode: '204', type: 'RESPONSE' },
-          properties: JSON.stringify({ description: 'super response' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/other/path', method: 'GET', statusCode: '204', type: 'RESPONSE_BODY' },
-          properties: JSON.stringify({ description: 'hiiiii' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/other/path', method: 'GET', statusCode: '204', type: 'RESPONSE_HEADER', name: 'x-header' },
-          properties: JSON.stringify({ description: 'THE header' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/other/path', method: 'GET', statusCode: '204', type: 'RESPONSE_HEADER', name: 'x-other-header' },
-          properties: JSON.stringify({ description: 'THE other header' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/other/path', method: 'GET', type: 'QUERY_PARAMETER', name: 'supername' },
-          properties: JSON.stringify({ description: 'this is your super name' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/other/path', method: 'GET', type: 'QUERY_PARAMETER', name: 'not-supername' },
-          properties: JSON.stringify({ description: 'this is not your super name' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/other/path', method: 'GET', type: 'PATH_PARAMETER', name: 'id' },
-          properties: JSON.stringify({ description: 'this is the id' }),
-          restApiId: 'superid',
-        });
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalledWith({
-          location: { path: 'some/other/path', method: 'GET', type: 'PATH_PARAMETER', name: 'super-id' },
-          properties: JSON.stringify({ description: 'this is the secret super id' }),
-          restApiId: 'superid',
-        });
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { type: 'API' },
+            properties: JSON.stringify({ description: 'this is an api' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { type: 'AUTHORIZER', name: 'an-authorizer' },
+            properties: JSON.stringify({ description: 'this is an authorizer' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { type: 'AUTHORIZER', name: 'no-authorizer' },
+            properties: JSON.stringify({ description: 'this is not an authorizer' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { type: 'RESOURCE', path: 'super/path' },
+            properties: JSON.stringify({ description: 'this is a super path' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { type: 'RESOURCE', path: 'hidden/path' },
+            properties: JSON.stringify({ description: 'this is a super secret hidden path' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { name: 'TestModel', type: 'MODEL' },
+            properties: JSON.stringify({ description: 'the test model schema' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { name: 'OtherModel', type: 'MODEL' },
+            properties: JSON.stringify({ description: 'the other test model schema' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/path', method: 'POST', type: 'METHOD' },
+            properties: JSON.stringify({ description: 'hello hello', summary: 'hello' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/path', method: 'POST', type: 'REQUEST_BODY' },
+            properties: JSON.stringify({ description: 'is it me' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/path', method: 'POST', type: 'REQUEST_HEADER', name: 'x-you' },
+            properties: JSON.stringify({ description: 'are looking for' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/path', method: 'POST', type: 'REQUEST_HEADER', name: 'x-hello' },
+            properties: JSON.stringify({ description: 'again' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/path', method: 'POST', statusCode: '200', type: 'RESPONSE' },
+            properties: JSON.stringify({ description: 'This is a good response' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/path', method: 'POST', statusCode: '400', type: 'RESPONSE' },
+            properties: JSON.stringify({ description: 'You failed' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/other/path', method: 'GET', statusCode: '204', type: 'RESPONSE' },
+            properties: JSON.stringify({ description: 'super response' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/other/path', method: 'GET', statusCode: '204', type: 'RESPONSE_BODY' },
+            properties: JSON.stringify({ description: 'hiiiii' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/other/path', method: 'GET', statusCode: '204', type: 'RESPONSE_HEADER', name: 'x-header' },
+            properties: JSON.stringify({ description: 'THE header' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/other/path', method: 'GET', statusCode: '204', type: 'RESPONSE_HEADER', name: 'x-other-header' },
+            properties: JSON.stringify({ description: 'THE other header' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/other/path', method: 'GET', type: 'QUERY_PARAMETER', name: 'supername' },
+            properties: JSON.stringify({ description: 'this is your super name' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/other/path', method: 'GET', type: 'QUERY_PARAMETER', name: 'not-supername' },
+            properties: JSON.stringify({ description: 'this is not your super name' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/other/path', method: 'GET', type: 'PATH_PARAMETER', name: 'id' },
+            properties: JSON.stringify({ description: 'this is the id' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/other/path', method: 'GET', type: 'PATH_PARAMETER', name: 'super-id' },
+            properties: JSON.stringify({ description: 'this is the secret super id' }),
+            restApiId: 'superid',
+          }
+        );
         done();
       });
     });
@@ -1729,22 +1818,44 @@ describe('ServerlessAWSDocumentation', function () {
       spyOn(console, 'info');
       this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
       this.serverlessMock.providers.aws.getCredentials.and.returnValue('awesome credentials');
-      this.serverlessMock.providers.aws.request.and.returnValue(Promise.resolve({
-        Stacks: [{
-          Outputs: [{
-            OutputKey: 'ApiId',
-            OutputValue: 'superid',
-          }],
-        }],
-      }));
-      this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
-      this.apiGatewayMock.getDocumentationVersion.and.returnValue({
-        promise: () => Promise.resolve(),
+
+      this.serverlessMock.providers.aws.request.and.callFake((api, method) => {
+        switch (method) {
+          case 'describeStacks':
+            return Promise.resolve({
+              Stacks: [{
+                Outputs: [{
+                  OutputKey: 'ApiId',
+                  OutputValue: 'superid',
+                }],
+              }],
+            });
+          case 'getDocumentationVersion':
+            promise: () => Promise.resolve();
+          default:
+            return Promise.resolve();
+        }
       });
+      this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
       this.plugin.afterDeploy().then(() => {
-        expect(this.apiGatewayMock.getDocumentationParts).not.toHaveBeenCalled();
-        expect(this.apiGatewayMock.deleteDocumentationPart).not.toHaveBeenCalled();
-        expect(this.apiGatewayMock.createDocumentationPart).not.toHaveBeenCalled();
+        expect(this.serverlessMock.providers.aws.request).not.toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          jasmine.any(Object)
+        );
+
+        expect(this.serverlessMock.providers.aws.request).not.toHaveBeenCalledWith(
+          'APIGateway',
+          'deleteDocumentationPart',
+          jasmine.any(Object)
+        );
+
+        expect(this.serverlessMock.providers.aws.request).not.toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          jasmine.any(Object)
+        );
+
         expect(console.info).toHaveBeenCalledWith('documentation version already exists, skipping upload');
         done();
       });
@@ -1753,23 +1864,30 @@ describe('ServerlessAWSDocumentation', function () {
     it('should not deploy when documentation version failed otherwise', function (done) {
       spyOn(console, 'info');
       this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
-      this.serverlessMock.providers.aws.getCredentials.and.returnValue('awesome credentials');
-      this.serverlessMock.providers.aws.request.and.returnValue(Promise.resolve({
-        Stacks: [{
-          Outputs: [{
-            OutputKey: 'ApiId',
-            OutputValue: 'superid',
-          }],
-        }],
-      }));
-      this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
-      this.apiGatewayMock.getDocumentationVersion.and.returnValue({
-        promise: () => Promise.reject(new Error('other error')),
+
+      this.serverlessMock.providers.aws.request.and.callFake((api, method) => {
+        switch (method) {
+          case 'describeStacks':
+            return Promise.resolve({
+              Stacks: [{
+                Outputs: [{
+                  OutputKey: 'ApiId',
+                  OutputValue: 'superid',
+                }],
+              }],
+            });
+          case 'getDocumentationVersion':
+            return Promise.reject(new Error('other error'));
+          default:
+            return Promise.reject();
+        }
       });
+
+      this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
       this.plugin.afterDeploy().catch(() => {
-        expect(this.apiGatewayMock.getDocumentationParts).not.toHaveBeenCalled();
-        expect(this.apiGatewayMock.deleteDocumentationPart).not.toHaveBeenCalled();
-        expect(this.apiGatewayMock.createDocumentationPart).not.toHaveBeenCalled();
+        expect(this.serverlessMock.providers.aws.request).not.toHaveBeenCalledWith('APIGateway', 'getDocumentationParts', jasmine.any(Object));
+        expect(this.serverlessMock.providers.aws.request).not.toHaveBeenCalledWith('APIGateway', 'deleteDocumentationPart', jasmine.any(Object));
+        expect(this.serverlessMock.providers.aws.request).not.toHaveBeenCalledWith('APIGateway', 'createDocumentationPart', jasmine.any(Object));
         done();
       });
     });
@@ -1897,57 +2015,49 @@ describe('ServerlessAWSDocumentation', function () {
 
       this.optionsMock.stage = 'megastage';
       this.optionsMock.region = 'hyperregion';
-      this.serverlessMock.providers.aws.request.and.returnValue(Promise.resolve({
-        Stacks: [{
-          Outputs: [{
-            OutputKey: 'ApiKey',
-            OutputValue: 'nothing',
-          }, {
-            OutputKey: 'AwsDocApiId',
-            OutputValue: 'superid',
-          }],
-        }],
-      }));
 
       delete this.serverlessMock.variables.service.custom.documentation.version;
       this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
-      this.serverlessMock.providers.aws.getCredentials.and.returnValue('awesome credentials');
-      this.apiGatewayMock.getDocumentationParts.and.returnValue({
-        promise: () => Promise.resolve({
-          items: [{
-            id: '123',
-          }, {
-            id: '456',
-          }],
-        }),
-      });
-      this.apiGatewayMock.deleteDocumentationPart.and.returnValue({
-        promise: () => Promise.resolve(),
-      });
-      this.apiGatewayMock.createDocumentationPart.and.returnValue({
-        promise: () => Promise.resolve(),
-      });
-      this.apiGatewayMock.getDocumentationVersion.and.returnValue({
-        promise: () => Promise.reject(new Error('Invalid Documentation version specified')),
-      });
 
-      this.apiGatewayMock.createDocumentationVersion.and.returnValue({
-        promise: () => Promise.resolve(),
+      this.serverlessMock.providers.aws.request.and.callFake((api, method) => {
+        switch (method) {
+          case 'describeStacks':
+            return Promise.resolve({
+              Stacks: [{
+                Outputs: [{
+                  OutputKey: 'ApiKey',
+                  OutputValue: 'nothing',
+                }, {
+                  OutputKey: 'AwsDocApiId',
+                  OutputValue: 'superid',
+                }],
+              }],
+            });
+          case 'getDocumentationParts':
+            return Promise.resolve({
+              items: [{
+                id: '123',
+              }, {
+                id: '456',
+              }],
+            });
+          case 'getDocumentationVersion':
+            return Promise.reject(new Error('Invalid Documentation version specified'));
+          default:
+            return Promise.resolve();
+        }
       });
 
       this.plugin.afterDeploy().then(() => {
-        expect(this.apiGatewayMock.getDocumentationParts).toHaveBeenCalled();
-        expect(this.apiGatewayMock.deleteDocumentationPart).toHaveBeenCalled();
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalled();
-        expect(this.apiGatewayMock.getDocumentationVersion).toHaveBeenCalledTimes(1);
-        expect(this.apiGatewayMock.getDocumentationVersion).toHaveBeenCalledWith({
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith('APIGateway', 'getDocumentationParts', jasmine.any(Object));
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith('APIGateway', 'deleteDocumentationPart', jasmine.any(Object));
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith('APIGateway', 'getDocumentationVersion', {
           restApiId: 'superid',
           documentationVersion: jasmine.any(String),
         });
 
-        const getDocVersion = this.apiGatewayMock.getDocumentationVersion.calls.argsFor(0)[0].documentationVersion;
-        expect(this.apiGatewayMock.createDocumentationVersion).toHaveBeenCalledTimes(1);
-        expect(this.apiGatewayMock.createDocumentationVersion).toHaveBeenCalledWith({
+        const getDocVersion = this.serverlessMock.providers.aws.request.calls.argsFor(1)[2].documentationVersion;
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith('APIGateway', 'createDocumentationVersion', {
           restApiId: 'superid',
           documentationVersion: getDocVersion,
           stageName: 'megastage',
@@ -1973,10 +2083,7 @@ describe('ServerlessAWSDocumentation', function () {
       this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
 
       this.plugin.afterDeploy().then(() => {
-        expect(awsMock.APIGateway).not.toHaveBeenCalled();
-        expect(this.apiGatewayMock.getDocumentationParts).not.toHaveBeenCalled();
-        expect(this.apiGatewayMock.deleteDocumentationPart).not.toHaveBeenCalled();
-        expect(this.apiGatewayMock.createDocumentationPart).not.toHaveBeenCalled();
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledTimes(1);
         expect(console.info).toHaveBeenCalledWith('documentation parts:');
         expect(console.info).toHaveBeenCalledWith(this.plugin.documentationParts);
         done();
@@ -2005,42 +2112,38 @@ describe('ServerlessAWSDocumentation', function () {
     });
 
     it('should not do not delete any documentation parts if there are none', function (done) {
-      this.serverlessMock.providers.aws.request.and.returnValue(Promise.resolve({
-        Stacks: [{
-          Outputs: [{
-            OutputKey: 'ApiId',
-            OutputValue: 'superid',
-          }],
-        }],
-      }));
+      this.serverlessMock.providers.aws.request.and.callFake((api, method) => {
+        switch (method) {
+          case 'describeStacks':
+            return Promise.resolve({
+              Stacks: [{
+                Outputs: [{
+                  OutputKey: 'ApiId',
+                  OutputValue: 'superid',
+                }],
+              }],
+            });
+          case 'getDocumentationParts':
+            return Promise.resolve({
+              items: [],
+            });
+          case 'getDocumentationVersion':
+            return Promise.reject({
+              message: 'Invalid Documentation version specified',
+            });
+          case 'deleteDocumentationPart':
+            return Promise.reject();
+          default:
+            return Promise.resolve();
+        }
+      });
       this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
 
-      this.apiGatewayMock.getDocumentationParts.and.returnValue({
-        promise: () => Promise.resolve({
-          items: [],
-        }),
-      });
-      this.apiGatewayMock.deleteDocumentationPart.and.returnValue({
-        promise: () => Promise.reject(),
-      });
-      this.apiGatewayMock.createDocumentationPart.and.returnValue({
-        promise: () => Promise.resolve(),
-      });
-
-      this.apiGatewayMock.getDocumentationVersion.and.returnValue({
-        promise: () => Promise.reject({
-          message: 'Invalid Documentation version specified',
-        }),
-      });
-
-      this.apiGatewayMock.createDocumentationVersion.and.returnValue({
-        promise: () => Promise.resolve(),
-      });
 
       this.plugin.afterDeploy().then(() => {
-        expect(this.apiGatewayMock.getDocumentationParts).toHaveBeenCalled();
-        expect(this.apiGatewayMock.deleteDocumentationPart).not.toHaveBeenCalled();
-        expect(this.apiGatewayMock.createDocumentationPart).toHaveBeenCalled();
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith('APIGateway', 'getDocumentationParts', jasmine.any(Object));
+        expect(this.serverlessMock.providers.aws.request).not.toHaveBeenCalledWith('APIGateway', 'deleteDocumentationPart', jasmine.any(Object));
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith('APIGateway', 'createDocumentationPart', jasmine.any(Object));
         done();
       });
     });
