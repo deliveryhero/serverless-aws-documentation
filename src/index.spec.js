@@ -2295,5 +2295,69 @@ describe('ServerlessAWSDocumentation', function () {
       expect(v4).toBe(v3);
     });
 
+    it('should add multiple response models with different content types for the same HTTP status code to ApiGateway methods', function () {
+      this.serverlessMock.variables.service.custom.documentation.models = [];
+      this.serverlessMock.service._functionNames = ['test'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'get',
+              cors: true,
+              private: true,
+              documentation: {
+                methodResponses: [
+                  {
+                    statusCode: 200,
+                    responseModels: {
+                      'application/json': 'CreateResponseJson',
+                      'application/xml': 'CreateResponseXml' // FIXME do we need a diff model?
+                    },
+                  },
+                ],
+              }
+            },
+          }],
+        }
+      };
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources;
+      resources.somepath_get = {
+        some: 'configuration',
+        Properties: {},
+      };
+
+      this.plugin.beforeDeploy();
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          somepath_get: {
+            some: 'configuration',
+            Properties: {
+              MethodResponses: [{
+                StatusCode: 200,
+                ResponseModels: {
+                  'application/json': 'CreateResponseJson',
+                  'application/xml': 'CreateResponseXml',
+                },
+              }],
+            },
+            DependsOn: ['CreateResponseJsonModel', 'CreateResponseXmlModel'],
+          }
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      });
+    });
   });
 });
