@@ -221,7 +221,7 @@ methodResponses:
 In the full example above you also can see the definition of the `requestModels` and `responseModels`
 in a the context of the documenatation.
 
-### Deploy the documenatation
+### Deploy the documentation
 
 To deploy the models you described above you just need to use `serverless deploy` as you are used to.
 
