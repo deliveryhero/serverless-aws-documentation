@@ -1,7 +1,6 @@
 'use strict';
 const documentation = require('./documentation');
 const models = require('./models');
-const aws = require('./aws.js')();
 
 class ServerlessAWSDocumentation {
   constructor(serverless, options) {
@@ -10,7 +9,7 @@ class ServerlessAWSDocumentation {
     this.provider = 'aws'
 
     Object.assign(this, models);
-    Object.assign(this, documentation(aws));
+    Object.assign(this, documentation());
 
     this.customVars = this.serverless.variables.service.custom;
     const naming = this.serverless.providers.aws.naming;
@@ -29,27 +28,37 @@ class ServerlessAWSDocumentation {
   }
 
   beforeDeploy() {
-    if (!(this.customVars && this.customVars.documentation && this.customVars.documentation.models)) return;
+    if (!(this.customVars && this.customVars.documentation)) return;
 
     this.cfTemplate = this.serverless.service.provider.compiledCloudFormationTemplate;
 
-    // Add model resources
-    const models = this.customVars.documentation.models.map(this.createCfModel)
-      .reduce((modelObj, model) => {
-        modelObj[`${model.Properties.Name}Model`] = model;
-        return modelObj;
-      }, {});
-    Object.assign(this.cfTemplate.Resources, models);
+    if (this.customVars.documentation.models) {
+      // Add model resources
+      const models = this.customVars.documentation.models.map(this.createCfModel)
+        .reduce((modelObj, model) => {
+          modelObj[`${model.Properties.Name}Model`] = model;
+          return modelObj;
+        }, {});
+      Object.assign(this.cfTemplate.Resources, models);
+    }
 
     // Add models to method resources
     this.serverless.service.getAllFunctions().forEach(functionName => {
       const func = this.serverless.service.getFunction(functionName);
       func.events.forEach(this.updateCfTemplateFromHttp.bind(this));
     });
+
+    // Add models
+    this.cfTemplate.Outputs.AwsDocApiId = {
+      Description: 'API ID',
+      Value: {
+        Ref: 'ApiGatewayRestApi',
+      },
+    };
   }
 
   afterDeploy() {
-    if (!this.customVars.documentation || !this.customVars.documentation.version) return;
+    if (!this.customVars.documentation) return;
     const stackName = this.serverless.providers.aws.naming.getStackName(this.options.stage);
     return this.serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
       this.options.stage,

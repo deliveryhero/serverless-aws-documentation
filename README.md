@@ -8,7 +8,7 @@ documentation for API documentation).
 
 ## What is AWS API Gateway documentation?
 
-Amazon introduced a new documentation feature for it's API Gateway on AWS on December 1st. With this you can add manually written documentation to all parts of API Gateway such as resources, requests, responses or single path or query parameters. When exporting Swagger from API Gateway these documentation is added to the other information to create a more human understandable documentation. 
+Amazon introduced a new documentation feature for it's API Gateway on AWS on December 1st. With this you can add manually written documentation to all parts of API Gateway such as resources, requests, responses or single path or query parameters. When exporting Swagger from API Gateway these documentation is added to the other information to create a more human understandable documentation.
 
 In addition to this documentation this plugin also adds support to add models to API Gateway and use it with the serverless functions. Models are JSON Schemas that define the structure of request or response bodies. This includes property structure, their types and their validation. More about this you'll find here: https://spacetelescope.github.io/understanding-json-schema/
 
@@ -36,7 +36,7 @@ To verify that the plugin was added successfully, run this in your command line:
 serverless
 ```
 
-The plugin should show up in the "Plugins" section of the output as "ServerlessAwsModels"
+The plugin should show up in the "Plugins" section of the output as "ServerlessAWSDocumentation"
 
 ## Usage
 
@@ -55,6 +55,7 @@ Your general documentation has to be nested in the custom variables section and 
 ```YAML
 custom:
   documentation:
+    version: '1'
     summary: 'My API'
     description: 'This is my API'
     authorizers:
@@ -75,6 +76,10 @@ documentation parts with the `description` and `summary` properties. The summary
 title and the description is for further explanation.
 
 On the upper level (directly in the `documentation` section) you describe your API in general.
+In there you also can manually describe the version (needs to be a string). If you don't define the
+version, the version that API Gateway needs will automatically be generated. This auto version is a
+hash of the documentation you defined, so if you don't change your documentation, the documentation
+in API Gateway won't be touched.
 Underneath you can define `authorizers`, `resources` and `models` which are all lists of descriptions.
 In addition to the description and the summary, Authorizers need the name of the authorizer, resources
 need the path of the described resource and models need the name of the model.
@@ -83,11 +88,11 @@ need the path of the described resource and models need the name of the model.
 ### Define the models
 
 Models have additional information you have to define. Besides the model name, the description and
-the summary, you need to define the *content type* for this model in addition to the *schema* that describes
-the model. Both are mandatory:
+the summary, you need to define the *content type* for this model in addition to the *schema* that
+describes the model:
 
 * `contentType`: the content type of the described request/response (like `"application/json"` or
-`"application/xml"`).
+`"application/xml"`). This is mandatory.
 * `schema`: The JSON Schema that describes the model. In the examples below external files are
 imported, but you can also define the schema inline using YAML format.
 
@@ -216,9 +221,20 @@ methodResponses:
 In the full example above you also can see the definition of the `requestModels` and `responseModels`
 in a the context of the documenatation.
 
-### Deploy the documenatation
+### Deploy the documentation
 
 To deploy the models you described above you just need to use `serverless deploy` as you are used to.
+
+If you've defined `requestHeaders` in your documentation this will add those request headers to the CloudFormation being deployed, if you haven't already defined those request parameters yourself. If you don't want this, add the option `--doc-safe-mode` when deploying. If you use that option you need to define the request parameters manually to  have them included in the documentation, e.g.
+
+```YAML
+ApiGatewayMethod{normalizedPath}{normalizedMethod}:
+  Properties:
+    RequestParameters:
+      method.request.header.{header-name}: true|false
+```
+
+See the Serverless documentation for more information on [resource naming](https://serverless.com/framework/docs/providers/aws/guide/resources/), and the AWS documentation for more information on [request parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration.html#cfn-apigateway-method-integration-requestparameters).
 
 ## Coming soon
 

@@ -1,5 +1,7 @@
 'use strict';
 
+const objectHash = require('object-hash');
+
 const documentationProperties = ['description', 'summary'];
 
 const globalDocumentationParts = require('./globalDocumentationParts.json');
@@ -24,7 +26,9 @@ function _mapToObj(map) {
   return returnObj;
 }
 
-module.exports = function(AWS) {
+var autoVersion;
+
+module.exports = function() {
   return {
     _createDocumentationPart: function _createDocumentationPart(part, def, knownLocation) {
       const location = part.locationProps.reduce((loc, property) => {
@@ -55,6 +59,7 @@ module.exports = function(AWS) {
           console.info(msg);
           throw new Error(msg);
         }
+
         def.forEach((singleDef) => this._createDocumentationPart(part, singleDef, knownLocation));
       } else {
         this._createDocumentationPart(part, def, knownLocation);
@@ -70,12 +75,11 @@ module.exports = function(AWS) {
     },
 
     _updateDocumentation: function _updateDocumentation() {
-      const apiGateway = new AWS.APIGateway(this.serverless.providers.aws.getCredentials());
-      return apiGateway.getDocumentationVersion({
+      const aws = this.serverless.providers.aws;
+      return aws.request('APIGateway', 'getDocumentationVersion', {
         restApiId: this.restApiId,
-        documentationVersion: this.customVars.documentation.version,
-      }).promise()
-        .then(version => {
+        documentationVersion: this.getDocumentationVersion(),
+      }).then(() => {
           const msg = 'documentation version already exists, skipping upload';
           console.info('-------------------');
           console.info(msg);
@@ -87,25 +91,30 @@ module.exports = function(AWS) {
 
           return Promise.reject(err);
         })
-        .then(() => apiGateway.getDocumentationParts({
-          restApiId: this.restApiId,
-          limit: 9999,
-        }).promise())
-        .then(results => results.items.map(part => apiGateway.deleteDocumentationPart({
-          documentationPartId: part.id,
-          restApiId: this.restApiId,
-        }).promise()))
+        .then(() =>
+          aws.request('APIGateway', 'getDocumentationParts', {
+            restApiId: this.restApiId,
+            limit: 9999,
+          })
+        )
+        .then(results => results.items.map(
+          part => aws.request('APIGateway', 'deleteDocumentationPart', {
+            documentationPartId: part.id,
+            restApiId: this.restApiId,
+          })
+        ))
         .then(promises => Promise.all(promises))
-        .then(() => this.documentationParts.map(part => {
-          part.properties = JSON.stringify(part.properties);
-          return apiGateway.createDocumentationPart(part).promise();
-        }))
-        .then(promises => Promise.all(promises))
-        .then(() => apiGateway.createDocumentationVersion({
+        .then(() => this.documentationParts.reduce((promise, part) => {
+          return promise.then(() => {
+            part.properties = JSON.stringify(part.properties);
+            return aws.request('APIGateway', 'createDocumentationPart', part);
+          });
+        }, Promise.resolve()))
+        .then(() => aws.request('APIGateway', 'createDocumentationVersion', {
           restApiId: this.restApiId,
-          documentationVersion: this.customVars.documentation.version,
+          documentationVersion: this.getDocumentationVersion(),
           stageName: this.options.stage,
-        }).promise());
+        }));
     },
 
     getGlobalDocumentationParts: function getGlobalDocumentationParts() {
@@ -113,22 +122,55 @@ module.exports = function(AWS) {
       this.createDocumentationParts(globalDocumentationParts, globalDocumentation, {});
     },
 
+
     getFunctionDocumentationParts: function getFunctionDocumentationParts() {
-      this.serverless.service.getAllFunctions().forEach(functionName => {
-        const func = this.serverless.service.getFunction(functionName);
-        func.events.forEach(eventTypes => {
-          if (eventTypes.http && eventTypes.http.documentation) {
-            const path = eventTypes.http.path;
-            const method = eventTypes.http.method.toUpperCase();
-            this.createDocumentationParts(functionDocumentationParts, eventTypes.http, { path, method });
-          }
-        });
+      const httpEvents = this._getHttpEvents();
+      Object.keys(httpEvents).forEach(funcName => {
+        const httpEvent = httpEvents[funcName];
+        const path = httpEvent.path;
+        const method = httpEvent.method.toUpperCase();
+        this.createDocumentationParts(functionDocumentationParts, httpEvent, { path, method });
       });
+    },
+
+    _getHttpEvents: function _getHttpEvents() {
+      return this.serverless.service.getAllFunctions().reduce((documentationObj, functionName) => {
+        const func = this.serverless.service.getFunction(functionName);
+        const funcHttpEvent = func.events
+        .filter((eventTypes) => eventTypes.http && eventTypes.http.documentation)
+        .map((eventTypes) => eventTypes.http)[0];
+
+        if (funcHttpEvent) {
+          documentationObj[functionName] = funcHttpEvent;
+        }
+
+        return documentationObj;
+      }, {});
+    },
+
+    generateAutoDocumentationVersion: function generateAutoDocumentationVersion() {
+      const versionObject = {
+        globalDocs: this.customVars.documentation,
+        functionDocs: {},
+      }
+
+      const httpEvents = this._getHttpEvents();
+      Object.keys(httpEvents).forEach(funcName => {
+        versionObject.functionDocs[funcName] = httpEvents[funcName].documentation;
+      });
+
+      autoVersion = objectHash(versionObject);
+
+      return autoVersion;
+    },
+
+    getDocumentationVersion: function getDocumentationVersion() {
+      return this.customVars.documentation.version || autoVersion || this.generateAutoDocumentationVersion();
     },
 
     _buildDocumentation: function _buildDocumentation(result) {
       this.restApiId = result.Stacks[0].Outputs
-        .filter(output => output.OutputKey === 'ApiId')
+        .filter(output => output.OutputKey === 'AwsDocApiId')
         .map(output => output.OutputValue)[0];
 
       this.getGlobalDocumentationParts();
@@ -142,6 +184,48 @@ module.exports = function(AWS) {
       }
 
       return this._updateDocumentation();
+    },
+
+    addDocumentationToApiGateway: function addDocumentationToApiGateway(resource, documentationPart, mapPath) {
+      if (documentationPart && Object.keys(documentationPart).length > 0) {
+        if (!resource.Properties.RequestParameters) {
+          resource.Properties.RequestParameters = {};
+        }
+
+        documentationPart.forEach(function(qp) {
+          const source = `method.request.${mapPath}.${qp.name}`;
+          if (resource.Properties.RequestParameters.hasOwnProperty(source)) return; // don't mess with existing config
+          resource.Properties.RequestParameters[source] = qp.required || false;
+        });
+      }
+    },
+
+    updateCfTemplateFromHttp: function updateCfTemplateFromHttp(eventTypes) {
+      if (eventTypes.http && eventTypes.http.documentation) {
+        const resourceName = this.normalizePath(eventTypes.http.path);
+        const methodLogicalId = this.getMethodLogicalId(resourceName, eventTypes.http.method);
+        const resource = this.cfTemplate.Resources[methodLogicalId];
+
+        resource.DependsOn = new Set();
+        this.addMethodResponses(resource, eventTypes.http.documentation);
+        this.addRequestModels(resource, eventTypes.http.documentation);
+        if (!this.options['doc-safe-mode']) {
+          this.addDocumentationToApiGateway(
+            resource,
+            eventTypes.http.documentation.requestHeaders,
+            'header'
+          );
+          this.addDocumentationToApiGateway(
+            resource,
+            eventTypes.http.documentation.queryParams,
+            'querystring'
+          );
+        }
+        resource.DependsOn = Array.from(resource.DependsOn);
+        if (resource.DependsOn.length === 0) {
+          delete resource.DependsOn;
+        }
+      }
     }
   };
 };

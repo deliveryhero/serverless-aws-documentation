@@ -4,6 +4,10 @@
     "modules": true
   },
   "rules": {
+    "no-console": [
+      "error",
+      { "allow": ["warn", "error", "info"] }
+    ],
     "no-underscore-dangle": 0,
     "no-restricted-syntax": ["error", "WithStatement"],
     "no-param-reassign": ["error", {

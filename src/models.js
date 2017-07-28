@@ -10,7 +10,7 @@ module.exports = {
         },
         ContentType: model.contentType,
         Name: model.name,
-        Schema: model.schema,
+        Schema: model.schema || {},
       },
     };
   },
@@ -23,16 +23,34 @@ module.exports = {
 
   addMethodResponses: function addMethodResponses(resource, documentation) {
     if (documentation.methodResponses) {
-      resource.Properties.MethodResponses = [];
+      if (!resource.Properties.MethodResponses) {
+        resource.Properties.MethodResponses = [];
+      }
 
       documentation.methodResponses.forEach(response => {
-        const _response = {
-          StatusCode: response.statusCode,
-          ResponseModels: response.responseModels,
-        };
+        let _response = resource.Properties.MethodResponses
+          .find(originalResponse => originalResponse.StatusCode === response.statusCode);
 
-        this.addModelDependencies(_response.ResponseModels, resource);
-        resource.Properties.MethodResponses.push(_response);
+        if (!_response) {
+          _response = {
+            StatusCode: response.statusCode,
+          };
+
+          if (response.responseHeaders) {
+            const methodResponseHeaders = {};
+            response.responseHeaders.forEach(header => {
+              methodResponseHeaders[`method.response.header.${header.name}`] = true
+            });
+            _response.ResponseParameters = methodResponseHeaders;
+          }
+
+          resource.Properties.MethodResponses.push(_response);
+        }
+
+        if (response.responseModels) {
+          _response.ResponseModels = response.responseModels;
+          this.addModelDependencies(_response.ResponseModels, resource);
+        }
       });
     }
   },
@@ -42,21 +60,6 @@ module.exports = {
       this.addModelDependencies(documentation.requestModels, resource);
       resource.Properties.RequestModels = documentation.requestModels;
     }
-  },
+  }
 
-  updateCfTemplateFromHttp: function updateCfTemplateFromHttp(eventTypes) {
-    if (eventTypes.http && eventTypes.http.documentation) {
-      const resourceName = this.normalizePath(eventTypes.http.path);
-      const methodLogicalId = this.getMethodLogicalId(resourceName, eventTypes.http.method);
-      const resource = this.cfTemplate.Resources[methodLogicalId];
-
-      resource.DependsOn = new Set();
-      this.addMethodResponses(resource, eventTypes.http.documentation);
-      this.addRequestModels(resource, eventTypes.http.documentation);
-      resource.DependsOn = Array.from(resource.DependsOn);
-      if (resource.DependsOn.length === 0) {
-        delete resource.DependsOn;
-      }
-    }
-  },
 };
