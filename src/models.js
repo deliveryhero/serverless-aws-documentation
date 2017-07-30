@@ -28,12 +28,13 @@ module.exports = {
       }
 
       documentation.methodResponses.forEach(response => {
+        const statusCode = response.statusCode.toString();
         let _response = resource.Properties.MethodResponses
-          .find(originalResponse => originalResponse.StatusCode === response.statusCode);
+          .find(originalResponse => originalResponse.StatusCode === statusCode);
 
         if (!_response) {
           _response = {
-            StatusCode: response.statusCode,
+            StatusCode: statusCode,
           };
 
           if (response.responseHeaders) {
