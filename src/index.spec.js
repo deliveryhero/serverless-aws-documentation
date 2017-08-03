@@ -521,7 +521,7 @@ describe('ServerlessAWSDocumentation', function () {
             DependsOn: ['CreateResponseJsonModel', 'CreateResponseXmlModel'],
             Properties: {
               MethodResponses: [{
-                StatusCode: 200,
+                StatusCode: '200',
                 ResponseModels: {
                   'application/json': 'CreateResponseJson',
                   'application/xml': 'CreateResponseXml',
