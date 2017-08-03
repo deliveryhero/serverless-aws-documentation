@@ -1924,6 +1924,135 @@ describe('ServerlessAWSDocumentation', function () {
       });
     });
 
+    it('should build documentation for all http event under a function', function (done) {
+      this.serverlessMock.variables.service.custom.documentation.api = {
+        description: 'this is an api',
+      };
+      this.serverlessMock.variables.service.custom.documentation.resources = [{
+        path: 'super/path',
+        description: 'this is a super path',
+      }, {
+        path: 'hidden/path',
+        description: 'this is a super secret hidden path',
+      }];
+
+      this.serverlessMock.service._functionNames = ['test'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+              documentation: {
+                summary: 'hello',
+                description: 'hello hello',
+              }
+            },
+          },{
+            http: {
+              path: 'some/other/path',
+              method: 'get',
+              documentation: {
+                summary: 'blah',
+                description: 'blah blah'
+              },
+            },
+          }],
+        },
+      };
+
+      this.optionsMock.stage = 'megastage';
+      this.optionsMock.region = 'hyperregion';
+      this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
+      this.serverlessMock.providers.aws.request.and.callFake((api, method) => {
+        switch (method) {
+          case 'describeStacks':
+            return Promise.resolve({
+              Stacks: [{
+                Outputs: [{
+                  OutputKey: 'ApiKey',
+                  OutputValue: 'nothing',
+                }, {
+                  OutputKey: 'AwsDocApiId',
+                  OutputValue: 'superid',
+                }],
+              }],
+            });
+          case 'getDocumentationParts':
+            return Promise.resolve({ items: [], });
+          case 'getDocumentationVersion':
+            return Promise.reject(new Error('Invalid Documentation version specified'));
+          default:
+            return Promise.resolve();
+        }
+      });
+
+      this.plugin.afterDeploy();
+      setTimeout(() => {
+        // 23
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'getDocumentationParts',
+          {
+            restApiId: 'superid',
+            limit: 9999,
+          }
+        );
+
+        // Create documentation parts
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { type: 'API' },
+            properties: JSON.stringify({ description: 'this is an api' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { type: 'RESOURCE', path: 'super/path' },
+            properties: JSON.stringify({ description: 'this is a super path' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { type: 'RESOURCE', path: 'hidden/path' },
+            properties: JSON.stringify({ description: 'this is a super secret hidden path' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/path', method: 'POST', type: 'METHOD' },
+            properties: JSON.stringify({ description: 'hello hello', summary: 'hello' }),
+            restApiId: 'superid',
+          }
+        );
+
+        expect(this.serverlessMock.providers.aws.request).toHaveBeenCalledWith(
+          'APIGateway',
+          'createDocumentationPart',
+          {
+            location: { path: 'some/other/path', method: 'GET', type: 'METHOD' },
+            properties: JSON.stringify({ description: 'blah blah', summary: 'blah' }),
+            restApiId: 'superid',
+          }
+        );
+        done();
+      });
+    });
+
     it('should not deploy when documentation version is not updated', function (done) {
       spyOn(console, 'info');
       this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
@@ -2200,7 +2329,7 @@ describe('ServerlessAWSDocumentation', function () {
       });
     });
 
-    it('should not do anything if an list documentation part is not an array', function (done) {
+    it('should not do anything if a list documentation part is not an array', function (done) {
       spyOn(console, 'info');
       this.serverlessMock.variables.service.custom.documentation.models = {
         this: 'is wrong',

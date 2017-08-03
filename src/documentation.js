@@ -125,8 +125,8 @@ module.exports = function() {
 
     getFunctionDocumentationParts: function getFunctionDocumentationParts() {
       const httpEvents = this._getHttpEvents();
-      Object.keys(httpEvents).forEach(funcName => {
-        const httpEvent = httpEvents[funcName];
+      Object.keys(httpEvents).forEach(funcNameAndPath => {
+        const httpEvent = httpEvents[funcNameAndPath];
         const path = httpEvent.path;
         const method = httpEvent.method.toUpperCase();
         this.createDocumentationParts(functionDocumentationParts, httpEvent, { path, method });
@@ -136,14 +136,13 @@ module.exports = function() {
     _getHttpEvents: function _getHttpEvents() {
       return this.serverless.service.getAllFunctions().reduce((documentationObj, functionName) => {
         const func = this.serverless.service.getFunction(functionName);
-        const funcHttpEvent = func.events
-        .filter((eventTypes) => eventTypes.http && eventTypes.http.documentation)
-        .map((eventTypes) => eventTypes.http)[0];
-
-        if (funcHttpEvent) {
-          documentationObj[functionName] = funcHttpEvent;
-        }
-
+        func.events
+          .filter((eventTypes) => eventTypes.http && eventTypes.http.documentation)
+          .map((eventTypes) => eventTypes.http)
+          .forEach(currEvent => {
+            let key = functionName + currEvent.path;
+            documentationObj[key] = currEvent;
+          });
         return documentationObj;
       }, {});
     },
