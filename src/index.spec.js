@@ -331,6 +331,116 @@ describe('ServerlessAWSDocumentation', function () {
       });
     });
 
+    it('should add multiple response models with different content types for the same HTTP status code to ApiGateway methods', function () {
+      this.serverlessMock.variables.service.custom.documentation.models = [{
+        name: 'CreateResponseJson',
+        contentType: "application/json",
+        schema: {
+          type: 'object'
+        }
+      }, {
+        name: 'CreateResponseXml',
+        contentType: "application/xml",
+        schema: {
+          type: 'object'
+        }
+      }];
+      this.serverlessMock.service._functionNames = ['test'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+              cors: true,
+              private: true,
+              documentation: {
+                methodResponses: [
+                  {
+                    statusCode: 200,
+                    responseModels: {
+                      'application/json': 'CreateResponseJson',
+                      'application/xml': 'CreateResponseXml',
+                    },
+                    responseHeaders: [{
+                      name: 'x-header',
+                      description: 'THE header',
+                    }],
+                  },
+                ],
+              }
+            },
+          }],
+        },
+      };
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources;
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {},
+      };
+
+      this.plugin.beforeDeploy();
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          somepath_post: {
+            some: 'configuration',
+            DependsOn: ['CreateResponseJsonModel', 'CreateResponseXmlModel'],
+            Properties: {
+              MethodResponses: [{
+                StatusCode: 200,
+                ResponseModels: {
+                  'application/json': 'CreateResponseJson',
+                  'application/xml': 'CreateResponseXml',
+                },
+                ResponseParameters: {
+                  'method.response.header.x-header': true,
+                },
+              }],
+            },
+          },
+          CreateResponseJsonModel: {
+            Type: 'AWS::ApiGateway::Model',
+            Properties: {
+              RestApiId: {
+                Ref: 'ApiGatewayRestApi'
+              },
+              ContentType: 'application/json',
+              Name: 'CreateResponseJson',
+              Schema: {
+                type: 'object'
+              }
+            }
+          },
+          CreateResponseXmlModel: {
+            Type: 'AWS::ApiGateway::Model',
+            Properties: {
+              RestApiId: {
+                Ref: 'ApiGatewayRestApi'
+              },
+              ContentType: 'application/xml',
+              Name:'CreateResponseXml',
+              Schema: {
+                type: 'object'
+              }
+            },
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      });
+    });
+
     it('should only add response methods with existing MethodResponses to ApiGateway methods', function () {
       this.serverlessMock.variables.service.custom.documentation.models = [];
       this.serverlessMock.service._functionNames = ['test'];
@@ -2293,71 +2403,6 @@ describe('ServerlessAWSDocumentation', function () {
       this.plugin.generateAutoDocumentationVersion();
       const v4 = this.plugin.getDocumentationVersion();
       expect(v4).toBe(v3);
-    });
-
-    it('should add multiple response models with different content types for the same HTTP status code to ApiGateway methods', function () {
-      this.serverlessMock.variables.service.custom.documentation.models = [];
-      this.serverlessMock.service._functionNames = ['test'];
-      this.serverlessMock.service._functions = {
-        test: {
-          events: [{
-            http: {
-              path: 'some/path',
-              method: 'get',
-              cors: true,
-              private: true,
-              documentation: {
-                methodResponses: [
-                  {
-                    statusCode: 200,
-                    responseModels: {
-                      'application/json': 'CreateResponseJson',
-                      'application/xml': 'CreateResponseXml' // FIXME do we need a diff model?
-                    },
-                  },
-                ],
-              }
-            },
-          }],
-        }
-      };
-
-      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources;
-      resources.somepath_get = {
-        some: 'configuration',
-        Properties: {},
-      };
-
-      this.plugin.beforeDeploy();
-
-      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
-        Resources: {
-          ExistingResource: {
-            with: 'configuration',
-          },
-          somepath_get: {
-            some: 'configuration',
-            Properties: {
-              MethodResponses: [{
-                StatusCode: 200,
-                ResponseModels: {
-                  'application/json': 'CreateResponseJson',
-                  'application/xml': 'CreateResponseXml',
-                },
-              }],
-            },
-            DependsOn: ['CreateResponseJsonModel', 'CreateResponseXmlModel'],
-          }
-        },
-        Outputs: {
-          AwsDocApiId: {
-            Description: 'API ID',
-            Value: {
-              Ref: 'ApiGatewayRestApi',
-            },
-          }
-        },
-      });
     });
   });
 });
