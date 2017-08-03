@@ -219,6 +219,11 @@ module.exports = function() {
             eventTypes.http.documentation.queryParams,
             'querystring'
           );
+          this.addDocumentationToApiGateway(
+              resource,
+              eventTypes.http.documentation.pathParams,
+              'path'
+          );
         }
         resource.DependsOn = Array.from(resource.DependsOn);
         if (resource.DependsOn.length === 0) {

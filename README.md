@@ -169,7 +169,7 @@ createItem:
             "application/xml": "CreateRequestXml"
           methodResponses:
             -
-              statusCode: 200
+              statusCode: "200"
               responseBody:
                 description: "Response body description"
               responseHeaders:
@@ -179,7 +179,7 @@ createItem:
               responseModels:
                 "application/json": "CreateResponse"
             -
-              statusCode: 400
+              statusCode: "400"
               responseModels:
                 "application/json": "ErrorResponse"
 ```
@@ -208,12 +208,12 @@ different content types. These response models are described like the `requestMo
 ```YAML
 methodResponses:
   -
-    statusCode: 200
+    statusCode: "200"
     responseModels:
       "application/json": "CreateResponse"
       "application/xml": "CreateResponseXml"
   -
-    statusCode: 400
+    statusCode: "400"
     responseModels:
       "application/json": "ErrorResponse"
 ```
@@ -221,7 +221,7 @@ methodResponses:
 In the full example above you also can see the definition of the `requestModels` and `responseModels`
 in a the context of the documenatation.
 
-### Deploy the documenatation
+### Deploy the documentation
 
 To deploy the models you described above you just need to use `serverless deploy` as you are used to.
 

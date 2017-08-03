@@ -3,6 +3,12 @@ describe('ServerlessAWSDocumentation', function () {
   const ServerlessAWSDocumentation = require('./index.js');
 
   beforeEach(function () {
+    jasmine.addMatchers(require('jasmine-diff')(jasmine, {
+      // Specify options here
+    }))
+  })
+
+  beforeEach(function () {
     this.serverlessMock = {
       providers: {
         aws: {
@@ -222,6 +228,129 @@ describe('ServerlessAWSDocumentation', function () {
               documentation: {
                 methodResponses: [
                   {
+                    statusCode: '200',
+                    responseModels: {
+                      'application/json': 'CreateResponse',
+                    },
+                  },
+                  {
+                    statusCode: '400',
+                    responseModels: {
+                      'application/json': 'ErrorResponse'
+                    },
+                  },
+                  {
+                    statusCode: '404',
+                    responseModels: {
+                      'application/json': 'ErrorResponse'
+                    },
+                  },
+                ],
+              }
+            },
+          }],
+        },
+        blub: {
+          events: [{
+            http: {
+              path: 'some/other/path',
+              method: 'get',
+              cors: true,
+              private: true,
+              documentation: {
+                methodResponses: [
+                  {
+                    statusCode: '204',
+                    responseModels: {
+                      'application/json': 'CrazyResponse',
+                    },
+                  },
+                ],
+              },
+            },
+          }],
+        },
+      };
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources;
+      resources.someotherpath_get = {
+        some: 'other_configuration',
+        Properties: {},
+      };
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {},
+      };
+
+      this.plugin.beforeDeploy();
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          somepath_post: {
+            some: 'configuration',
+            DependsOn: ['CreateResponseModel', 'ErrorResponseModel'],
+            Properties: {
+              MethodResponses: [{
+                StatusCode: '200',
+                ResponseModels: {
+                  'application/json': 'CreateResponse',
+                },
+              },
+              {
+                StatusCode: '400',
+                ResponseModels: {
+                  'application/json': 'ErrorResponse'
+                },
+              },
+              {
+                StatusCode: '404',
+                ResponseModels: {
+                  'application/json': 'ErrorResponse'
+                },
+              }],
+            },
+          },
+          someotherpath_get: {
+            some: 'other_configuration',
+            DependsOn: ['CrazyResponseModel'],
+            Properties: {
+              MethodResponses: [{
+                StatusCode: '204',
+                ResponseModels: {
+                  'application/json': 'CrazyResponse',
+                },
+              }],
+            }
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      });
+    });
+
+    it('should add response methods with integer statusCode to ApiGateway methods', function () {
+      this.serverlessMock.variables.service.custom.documentation.models = [];
+      this.serverlessMock.service._functionNames = ['test', 'blub'];
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+              cors: true,
+              private: true,
+              documentation: {
+                methodResponses: [
+                  {
                     statusCode: 200,
                     responseModels: {
                       'application/json': 'CreateResponse',
@@ -288,19 +417,19 @@ describe('ServerlessAWSDocumentation', function () {
             DependsOn: ['CreateResponseModel', 'ErrorResponseModel'],
             Properties: {
               MethodResponses: [{
-                StatusCode: 200,
+                StatusCode: '200',
                 ResponseModels: {
                   'application/json': 'CreateResponse',
                 },
               },
               {
-                StatusCode: 400,
+                StatusCode: '400',
                 ResponseModels: {
                   'application/json': 'ErrorResponse'
                 },
               },
               {
-                StatusCode: 404,
+                StatusCode: '404',
                 ResponseModels: {
                   'application/json': 'ErrorResponse'
                 },
@@ -312,7 +441,7 @@ describe('ServerlessAWSDocumentation', function () {
             DependsOn: ['CrazyResponseModel'],
             Properties: {
               MethodResponses: [{
-                StatusCode: 204,
+                StatusCode: '204',
                 ResponseModels: {
                   'application/json': 'CrazyResponse',
                 },
@@ -455,13 +584,13 @@ describe('ServerlessAWSDocumentation', function () {
               documentation: {
                 methodResponses: [
                   {
-                    statusCode: 200,
+                    statusCode: '200',
                     responseModels: {
                       'application/json': 'CreateResponse',
                     },
                   },
                   {
-                    statusCode: 404,
+                    statusCode: '404',
                     responseModels: {
                       'application/json': 'ErrorResponse'
                     },
@@ -478,11 +607,11 @@ describe('ServerlessAWSDocumentation', function () {
         some: 'configuration',
         Properties: {
           MethodResponses: [{
-            StatusCode: 200,
+            StatusCode: '200',
             id: 9001,
           },
           {
-            StatusCode: 404,
+            StatusCode: '404',
             id: 9002,
           }],
         },
@@ -500,14 +629,14 @@ describe('ServerlessAWSDocumentation', function () {
             DependsOn: ['CreateResponseModel', 'ErrorResponseModel'],
             Properties: {
               MethodResponses: [{
-                StatusCode: 200,
+                StatusCode: '200',
                 id: 9001,
                 ResponseModels: {
                   'application/json': 'CreateResponse',
                 },
               },
               {
-                StatusCode: 404,
+                StatusCode: '404',
                 id: 9002,
                 ResponseModels: {
                   'application/json': 'ErrorResponse'
@@ -541,14 +670,14 @@ describe('ServerlessAWSDocumentation', function () {
               documentation: {
                 methodResponses: [
                   {
-                    statusCode: 200,
+                    statusCode: '200',
                     should: 'not be included',
                     responseModels: {
                       'application/json': 'CreateResponse',
                     },
                   },
                   {
-                    statusCode: 404,
+                    statusCode: '404',
                     should: 'not be included',
                     responseModels: {
                       'application/json': 'ErrorResponse'
@@ -566,7 +695,7 @@ describe('ServerlessAWSDocumentation', function () {
         some: 'configuration',
         Properties: {
           MethodResponses: [{
-            StatusCode: 200,
+            StatusCode: '200',
             id: 9001,
           },],
         },
@@ -584,14 +713,14 @@ describe('ServerlessAWSDocumentation', function () {
             DependsOn: ['CreateResponseModel', 'ErrorResponseModel'],
             Properties: {
               MethodResponses: [{
-                StatusCode: 200,
+                StatusCode: '200',
                 id: 9001,
                 ResponseModels: {
                   'application/json': 'CreateResponse',
                 },
               },
               {
-                StatusCode: 404,
+                StatusCode: '404',
                 ResponseModels: {
                   'application/json': 'ErrorResponse'
                 },
@@ -624,13 +753,13 @@ describe('ServerlessAWSDocumentation', function () {
               documentation: {
                 methodResponses: [
                   {
-                    statusCode: 200,
+                    statusCode: '200',
                     responseModels: {
                       'application/json': 'CreateResponse',
                     },
                   },
                   {
-                    statusCode: 404,
+                    statusCode: '404',
                     responseModels: {
                       'application/json': 'ErrorResponse'
                     },
@@ -662,13 +791,13 @@ describe('ServerlessAWSDocumentation', function () {
             DependsOn: ['CreateResponseModel', 'ErrorResponseModel'],
             Properties: {
               MethodResponses: [{
-                StatusCode: 200,
+                StatusCode: '200',
                 ResponseModels: {
                   'application/json': 'CreateResponse',
                 },
               },
               {
-                StatusCode: 404,
+                StatusCode: '404',
                 ResponseModels: {
                   'application/json': 'ErrorResponse'
                 },
@@ -702,7 +831,7 @@ describe('ServerlessAWSDocumentation', function () {
               documentation: {
                 methodResponses: [
                   {
-                    statusCode: 200,
+                    statusCode: '200',
                     responseModels: {
                       'application/json': 'CreateResponse',
                     },
@@ -715,7 +844,7 @@ describe('ServerlessAWSDocumentation', function () {
                     }],
                   },
                   {
-                    statusCode: 400,
+                    statusCode: '400',
                     responseModels: {
                       'application/json': 'ErrorResponse'
                     },
@@ -725,7 +854,7 @@ describe('ServerlessAWSDocumentation', function () {
                     }],
                   },
                   {
-                    statusCode: 404,
+                    statusCode: '404',
                     responseModels: {
                       'application/json': 'ErrorResponse'
                     },
@@ -749,7 +878,7 @@ describe('ServerlessAWSDocumentation', function () {
               documentation: {
                 methodResponses: [
                   {
-                    statusCode: 204,
+                    statusCode: '204',
                     responseModels: {
                       'application/json': 'CrazyResponse',
                     },
@@ -790,7 +919,7 @@ describe('ServerlessAWSDocumentation', function () {
             DependsOn: ['CreateResponseModel', 'ErrorResponseModel'],
             Properties: {
               MethodResponses: [{
-                StatusCode: 200,
+                StatusCode: '200',
                 ResponseModels: {
                   'application/json': 'CreateResponse',
                 },
@@ -800,7 +929,7 @@ describe('ServerlessAWSDocumentation', function () {
                 },
               },
               {
-                StatusCode: 400,
+                StatusCode: '400',
                 ResponseModels: {
                   'application/json': 'ErrorResponse'
                 },
@@ -809,7 +938,7 @@ describe('ServerlessAWSDocumentation', function () {
                 },
               },
               {
-                StatusCode: 404,
+                StatusCode: '404',
                 ResponseModels: {
                   'application/json': 'ErrorResponse'
                 },
@@ -824,7 +953,7 @@ describe('ServerlessAWSDocumentation', function () {
             DependsOn: ['CrazyResponseModel'],
             Properties: {
               MethodResponses: [{
-                StatusCode: 204,
+                StatusCode: '204',
                 ResponseModels: {
                   'application/json': 'CrazyResponse',
                 },
@@ -1026,13 +1155,13 @@ describe('ServerlessAWSDocumentation', function () {
                 },
                 methodResponses: [
                   {
-                    statusCode: 200,
+                    statusCode: '200',
                     responseModels: {
                       'application/json': 'CreateResponse',
                     },
                   },
                   {
-                    statusCode: 400,
+                    statusCode: '400',
                     responseModels: {
                       'application/json': 'ErrorResponse'
                     },
@@ -1052,7 +1181,7 @@ describe('ServerlessAWSDocumentation', function () {
               documentation: {
                 methodResponses: [
                   {
-                    statusCode: 204,
+                    statusCode: '204',
                     responseModels: {
                       'application/json': 'CrazyResponse',
                     },
@@ -1090,13 +1219,13 @@ describe('ServerlessAWSDocumentation', function () {
                 'application/xml': 'CreateRequestXml',
               },
               MethodResponses: [{
-                StatusCode: 200,
+                StatusCode: '200',
                 ResponseModels: {
                   'application/json': 'CreateResponse',
                 },
               },
               {
-                StatusCode: 400,
+                StatusCode: '400',
                 ResponseModels: {
                   'application/json': 'ErrorResponse'
                 },
@@ -1108,7 +1237,7 @@ describe('ServerlessAWSDocumentation', function () {
             DependsOn: ['CrazyResponseModel'],
             Properties: {
               MethodResponses: [{
-                StatusCode: 204,
+                StatusCode: '204',
                 ResponseModels: {
                   'application/json': 'CrazyResponse',
                 },
