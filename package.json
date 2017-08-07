@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "codecov": "cat coverage/*/lcov.info | codecov",
-    "test": "istanbul cover -x \"src/index.spec.js\" jasmine ./src/index.spec.js",
+    "test": "istanbul cover -x \"src/index.spec.js\" jasmine ./src/index.spec.js ./src/documentation.spec.js",
     "test:nocoverage": "jasmine ./src/index.spec.js"
   },
   "repository": "9cookies/serverless-aws-documentation",

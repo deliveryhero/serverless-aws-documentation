@@ -58,6 +58,13 @@ custom:
     version: '1'
     summary: 'My API'
     description: 'This is my API'
+    tags:
+      -
+        name: 'Data Creation'
+        description: 'Services to create things'
+      -
+        name: 'Some other tag'
+        description: 'A tag for other things'
     authorizers:
       -
         name: "MyCustomAuthorizer"
@@ -80,9 +87,9 @@ In there you also can manually describe the version (needs to be a string). If y
 version, the version that API Gateway needs will automatically be generated. This auto version is a
 hash of the documentation you defined, so if you don't change your documentation, the documentation
 in API Gateway won't be touched.
-Underneath you can define `authorizers`, `resources` and `models` which are all lists of descriptions.
+Underneath you can define `tags`, `authorizers`, `resources` and `models` which are all lists of descriptions.
 In addition to the description and the summary, Authorizers need the name of the authorizer, resources
-need the path of the described resource and models need the name of the model.
+need the path of the described resource and models need the name of the model. Tags provides the description for tags that are used on `METHOD`s (HTTP events), [more info here](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#tag-object).
 
 
 ### Define the models
