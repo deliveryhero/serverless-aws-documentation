@@ -126,6 +126,7 @@ described in your `serverless.yml`. Inside the `http` event of your functions yo
 * `queryParams`: A list of query parameters (needs `name` of the parameter)
 * `pathParams`: A list of path parameters (needs `name` of the parameter)
 * `methodResponses`: A list of method responses (needs the `statusCode` of the response)
+* `tags`: A list of tags apply to the `METHOD`, which is the HTTP event in serverless. Used in [Swagger-UI](https://swagger.io/swagger-ui/)
 
 The methodResponses itself can have the following parts:
 
@@ -144,6 +145,9 @@ createItem:
         documentation:
           summary: "Create something"
           description: "Creates the thing you need"
+          tags:
+            - "Data Creation"
+            - "Some other tag"
           requestBody:
             description: "Request body description"
           requestHeaders:
