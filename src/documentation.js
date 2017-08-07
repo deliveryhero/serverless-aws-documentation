@@ -2,7 +2,7 @@
 
 const objectHash = require('object-hash');
 
-const documentationProperties = ['description', 'summary'];
+const documentationProperties = ['description', 'summary', 'tags'];
 
 const globalDocumentationParts = require('./globalDocumentationParts.json');
 const functionDocumentationParts = require('./functionDocumentationParts.json');

@@ -1580,6 +1580,7 @@ describe('ServerlessAWSDocumentation', function () {
                 summary: 'hello',
                 description: 'hello hello',
                 unknownProperty: 'should not be displayed',
+                tags: ['tag1', 'tag2'],
                 requestBody: {
                   description: 'is it me',
                 },
@@ -1805,7 +1806,7 @@ describe('ServerlessAWSDocumentation', function () {
           'createDocumentationPart',
           {
             location: { path: 'some/path', method: 'POST', type: 'METHOD' },
-            properties: JSON.stringify({ description: 'hello hello', summary: 'hello' }),
+            properties: JSON.stringify({ description: 'hello hello', summary: 'hello', tags: ['tag1', 'tag2'] }),
             restApiId: 'superid',
           }
         );
