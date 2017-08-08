@@ -1553,6 +1553,10 @@ describe('ServerlessAWSDocumentation', function () {
     it('should build documentation with deploying and upload to api gateway', function (done) {
       this.serverlessMock.variables.service.custom.documentation.api = {
         description: 'this is an api',
+        tags: [
+          {name: 'tag1', description: 'First tag'},
+          {name: 'tag2', description: 'Second tag'}
+        ]
       };
       this.serverlessMock.variables.service.custom.documentation.authorizers = [{
         name: 'an-authorizer',
@@ -1580,6 +1584,7 @@ describe('ServerlessAWSDocumentation', function () {
                 summary: 'hello',
                 description: 'hello hello',
                 unknownProperty: 'should not be displayed',
+                tags: ['tag1', 'tag2'],
                 requestBody: {
                   description: 'is it me',
                 },
@@ -1735,7 +1740,13 @@ describe('ServerlessAWSDocumentation', function () {
           'createDocumentationPart',
           {
             location: { type: 'API' },
-            properties: JSON.stringify({ description: 'this is an api' }),
+            properties: JSON.stringify({
+              description: 'this is an api',
+              tags: [
+                {name: 'tag1', description: 'First tag'},
+                {name: 'tag2', description: 'Second tag'}
+              ]
+            }),
             restApiId: 'superid',
           }
         );
@@ -1805,7 +1816,7 @@ describe('ServerlessAWSDocumentation', function () {
           'createDocumentationPart',
           {
             location: { path: 'some/path', method: 'POST', type: 'METHOD' },
-            properties: JSON.stringify({ description: 'hello hello', summary: 'hello' }),
+            properties: JSON.stringify({ description: 'hello hello', summary: 'hello', tags: ['tag1', 'tag2'] }),
             restApiId: 'superid',
           }
         );
@@ -2219,7 +2230,7 @@ describe('ServerlessAWSDocumentation', function () {
       });
     });
 
-    it('should not do anything if an list documentation part is not an array', function (done) {
+    it('should not do anything if a list documentation part is not an array', function (done) {
       spyOn(console, 'info');
       this.serverlessMock.variables.service.custom.documentation.models = {
         this: 'is wrong',

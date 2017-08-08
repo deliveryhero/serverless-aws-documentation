@@ -2,14 +2,12 @@
 
 const objectHash = require('object-hash');
 
-const documentationProperties = ['description', 'summary'];
-
 const globalDocumentationParts = require('./globalDocumentationParts.json');
 const functionDocumentationParts = require('./functionDocumentationParts.json');
 
-function  getDocumentationProperties(def) {
+function getDocumentationProperties(def, propertiesToGet) {
   const docProperties = new Map();
-  documentationProperties.forEach((key) => {
+  propertiesToGet.forEach((key) => {
     if (def[key]) {
       docProperties.set(key, def[key]);
     }
@@ -26,6 +24,24 @@ function _mapToObj(map) {
   return returnObj;
 }
 
+/*
+ * Different types support different extra properties beyond
+ * the basic ones, so we need to make sure we only look for
+ * the appropriate properties.
+ */
+function determinePropertiesToGet (type) {
+  const defaultProperties = ['description', 'summary']
+  let result = defaultProperties
+  switch (type) {
+    case 'API':
+    case 'METHOD':
+      result.push('tags')
+      break
+  }
+  return result
+
+}
+
 var autoVersion;
 
 module.exports = function() {
@@ -36,8 +52,9 @@ module.exports = function() {
         return loc;
       }, {});
       location.type = part.type;
+      const propertiesToGet = determinePropertiesToGet(location.type)
 
-      const props = getDocumentationProperties(def);
+      const props = getDocumentationProperties(def, propertiesToGet);
       if (props.size > 0) {
         this.documentationParts.push({
           location,
@@ -121,7 +138,6 @@ module.exports = function() {
       const globalDocumentation = this.customVars.documentation;
       this.createDocumentationParts(globalDocumentationParts, globalDocumentation, {});
     },
-
 
     getFunctionDocumentationParts: function getFunctionDocumentationParts() {
       const httpEvents = this._getHttpEvents();
@@ -231,6 +247,8 @@ module.exports = function() {
           delete resource.DependsOn;
         }
       }
-    }
+    },
+
+    _getDocumentationProperties: getDocumentationProperties
   };
 };
