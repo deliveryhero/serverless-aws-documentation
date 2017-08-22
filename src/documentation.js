@@ -34,6 +34,8 @@ function determinePropertiesToGet (type) {
   let result = defaultProperties
   switch (type) {
     case 'API':
+      result.push('tags', 'info')
+      break
     case 'METHOD':
       result.push('tags')
       break
