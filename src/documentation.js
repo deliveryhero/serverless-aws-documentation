@@ -156,7 +156,7 @@ module.exports = function() {
           .filter((eventTypes) => eventTypes.http && eventTypes.http.documentation)
           .map((eventTypes) => eventTypes.http)
           .forEach(currEvent => {
-            let key = functionName + currEvent.path;
+            let key = functionName + currEvent.method + currEvent.path;
             documentationObj[key] = currEvent;
           });
         return documentationObj;
