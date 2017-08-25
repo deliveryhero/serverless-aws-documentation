@@ -34,6 +34,8 @@ function determinePropertiesToGet (type) {
   let result = defaultProperties
   switch (type) {
     case 'API':
+      result.push('tags', 'info')
+      break
     case 'METHOD':
       result.push('tags')
       break
@@ -156,7 +158,7 @@ module.exports = function() {
           .filter((eventTypes) => eventTypes.http && eventTypes.http.documentation)
           .map((eventTypes) => eventTypes.http)
           .forEach(currEvent => {
-            let key = functionName + currEvent.path;
+            let key = functionName + currEvent.method + currEvent.path;
             documentationObj[key] = currEvent;
           });
         return documentationObj;
