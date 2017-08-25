@@ -38,6 +38,10 @@ serverless
 
 The plugin should show up in the "Plugins" section of the output as "ServerlessAWSDocumentation"
 
+## Example serverless.yml
+
+You can find a fully functioning serverless project with examples of documentation in the `./example/` directory. See the [README.md](./example/README.md) in there for more details.
+
 ## Usage
 
 There are two places you need to touch in the `serverless.yml`: *custom variables* to define your
@@ -246,10 +250,6 @@ ApiGatewayMethod{normalizedPath}{normalizedMethod}:
 ```
 
 See the Serverless documentation for more information on [resource naming](https://serverless.com/framework/docs/providers/aws/guide/resources/), and the AWS documentation for more information on [request parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration.html#cfn-apigateway-method-integration-requestparameters).
-
-## Coming soon
-
-A demo `serverless.yml` to help you better understand how to use this plugin.
 
 ## Contribution
 
