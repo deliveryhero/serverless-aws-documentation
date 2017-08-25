@@ -9,6 +9,13 @@ provider:
 plugins:
   - serverless-aws-documentation
 
+# Let's keep this deployment lightweight. Probably not something you should copy
+package:
+  exclude:
+    - ./**
+  include:
+    - handler.js
+
 custom:
   # You must have the documentation object
   documentation:
