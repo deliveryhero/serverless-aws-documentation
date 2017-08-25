@@ -1,0 +1,136 @@
+service: serverless-aws-documentation-example
+
+provider:
+  name: aws
+  runtime: nodejs6.10
+  region: us-east-1
+
+# Remember to reference the plugin
+plugins:
+  - serverless-aws-documentation
+
+# Let's keep this deployment lightweight. Probably not something you should copy
+package:
+  exclude:
+    - ./**
+  include:
+    - handler.js
+
+custom:
+  # You must have the documentation object
+  documentation:
+    # this is general info about the API
+    api:
+      info:
+        version: '2'
+        title: Example API
+        description: Some example API
+        termsOfService: https://www.google.com
+        contact:
+          name: The contact person
+          url: https://www.serverless.com/framework
+          email: some-fake@email.com
+        license:
+          name: The license
+          url: https://www.github.com
+      tags:
+        -
+          name: Tag1
+          description: The first tag
+        -
+          name: Tag2
+          description: That other tag that we all love
+    # Now we describe all the models that we use
+    models:
+      -
+        name: MessageResponse
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+      -
+        name: DoSomethingRequest
+        contentType: "application/json"
+        schema:
+          type: array
+          items:
+            type: string
+      -
+        name: DoSomethingResponse
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            result:
+              type: string
+            submittedItems:
+              type: number
+      -
+        name: 400JsonResponse
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            statusCode:
+              type: number
+  commonModelSchemaFragments:
+    # defining common fragments means you can reference them with a single line
+    MethodResponse400Json:
+      statusCode: '400'
+      responseModels:
+        "application/json": 400JsonResponse
+
+functions:
+  theRouter:
+    handler: handler.router
+    events:
+      - http:
+          path: example/message
+          method: get
+          cors: true
+          documentation:
+            summary: Gets a simple message
+            tags:
+              - Tag1
+            description: >
+              Demonstrates a GET method. You can see query string parameters,
+              request headers, response body and response headers.
+            queryParams:
+              -
+                name: firstParam
+                description: The first param that we want, you MUST pass it
+                required: true
+              -
+                name: secondParam
+                description: The second param. This one is optional
+            methodResponses:
+              -
+                statusCode: '200'
+                responseModels:
+                  "application/json": MessageResponse
+                responseHeaders:
+                  -
+                    name: link
+                    description: describes other actions that can be taken
+                    type: string
+      - http:
+          path: example/do-something
+          method: post
+          cors: true
+          documentation:
+            summary: Takes a request body
+            tags:
+              - Tag2
+            description: Demonstrates a POST method. We show a request body here and have multiple response models.
+            requestModels:
+               "application/json": DoSomethingRequest
+            methodResponses:
+              -
+                statusCode: '200'
+                responseModels:
+                  "application/json": DoSomethingResponse
+              - ${self:custom.commonModelSchemaFragments.MethodResponse400Json}
