@@ -15,8 +15,21 @@ describe('ServerlessAWSDocumentation', function () {
         locationProps: []
       }
       let def = {
-        description: 'the desc',
-        summary: 'the summary',
+        info: {
+          title: 'the title',
+          description: 'the desc',
+          version: 123,
+          termsOfService: 'http://www.example.com/terms-of-service',
+          contact: {
+            name: 'John Smith',
+            url: 'http://www.example.com/me',
+            email: 'js@example.com'
+          },
+          license: {
+            name: 'Licensing',
+            url: 'http://www.example.com/licensing'
+          }
+        },
         tags: ['tag1']
       }
       let knownLocation = {}
@@ -29,8 +42,21 @@ describe('ServerlessAWSDocumentation', function () {
             type: 'API'
           },
           properties: {
-            description: 'the desc',
-            summary: 'the summary',
+            info: {
+              title: 'the title',
+              description: 'the desc',
+              version: 123,
+              termsOfService: 'http://www.example.com/terms-of-service',
+              contact: {
+                name: 'John Smith',
+                url: 'http://www.example.com/me',
+                email: 'js@example.com'
+              },
+              license: {
+                name: 'Licensing',
+                url: 'http://www.example.com/licensing'
+              }
+            },
             tags: ['tag1']
           },
           restApiId: 'testApiId'

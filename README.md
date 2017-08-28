@@ -54,21 +54,39 @@ For manual full text descriptions for the parts of your API you need to describe
 In the general part you can describe your API in general, authorizers, models and resources.
 If you want to find out more about models, you can skip to the next section.
 
+------
+#### Gotcha with 'version' and 'title' on the API
+
+Currently (August 2017) you'll have trouble with the `title` and `version` fields for you API description. If you define them as below, they'll be correctly created in API Gateway (you can see it in the web console) but when you export the Swagger document from API Gateway, your title and version will be ignored and replaced with something like:
+
+    version: "2017-08-23T07:59:29Z"
+    title: dev-your-api-serverless
+
+------
 Your general documentation has to be nested in the custom variables section and looks like this:
 
 ```YAML
 custom:
   documentation:
-    version: '1'
-    summary: 'My API'
-    description: 'This is my API'
+    info:
+      version: "2" # see note above about this being ignored
+      title: "Name of your API" # see note above about this being ignored
+      description: "This is the best API ever"
+      termsOfService: "http://www.example.com/terms-of-service"
+      contact:
+        name: "John Smith"
+        url: "http://www.example.com/me"
+        email: "js@example.com"
+      license:
+        name: "Licensing"
+        url: "http://www.example.com/licensing"
     tags:
       -
-        name: 'Data Creation'
-        description: 'Services to create things'
+        name: "Data Creation"
+        description: "Services to create things"
       -
-        name: 'Some other tag'
-        description: 'A tag for other things'
+        name: "Some other tag"
+        description: "A tag for other things"
     authorizers:
       -
         name: "MyCustomAuthorizer"
@@ -83,14 +101,15 @@ custom:
 ```
 
 Your documentation has to be nested in the `documentation` custom variable. You describe your
-documentation parts with the `description` and `summary` properties. The summary is some sort of
-title and the description is for further explanation.
+documentation parts with the `description` and `summary` (or `title` for the API itself) properties. The summary is some sort of
+title and the description is for further explanation. You can see the expected format in the [Swagger v2 specification for the info object](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#info-object).
 
-On the upper level (directly in the `documentation` section) you describe your API in general.
+On the upper level, under the `documentation` section, you describe your API in the `info` object.
 In there you also can manually describe the version (needs to be a string). If you don't define the
 version, the version that API Gateway needs will automatically be generated. This auto version is a
 hash of the documentation you defined, so if you don't change your documentation, the documentation
 in API Gateway won't be touched.
+
 Underneath you can define `tags`, `authorizers`, `resources` and `models` which are all lists of descriptions.
 In addition to the description and the summary, Authorizers need the name of the authorizer, resources
 need the path of the described resource and models need the name of the model. Tags provides the description for tags that are used on `METHOD`s (HTTP events), [more info here](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#tag-object).
