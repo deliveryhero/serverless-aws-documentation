@@ -144,6 +144,34 @@ custom:
         schema: ${file(models/create_request.json)}
 ```
 
+Within the schema, you can reference and nest any of your models with the `$ref` keyword, its value should be something like `{{model: YourModelName}}`. For example:
+
+```YAML
+custom:
+  documentation:
+    models:
+      -
+        name: "Address"
+        description: "This is an address"
+        contentType: "application/json"
+        schema:
+          type: "object"
+          properties:
+            street:
+              type: "string"
+      -
+        name: "Customer"
+        description: "This is a customer"
+        contentType: "application/json"
+        schema:
+          type: "object"
+          properties:
+            name:
+              type: "string"
+            address:
+              $ref: "{{model: Address}}"
+```
+
 ### Function specific documentation
 
 When you want to describe the parts inside a `RESOURCE` you need to do this in the functions
