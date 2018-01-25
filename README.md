@@ -281,7 +281,7 @@ methodResponses:
 ```
 
 In the full example above you also can see the definition of the `requestModels` and `responseModels`
-in a the context of the documenatation.
+in a the context of the documentation.
 
 ### Deploy the documentation
 
