@@ -82,7 +82,7 @@ describe('ServerlessAWSDocumentation', function () {
       expect(this.plugin.options).toBe(this.optionsMock);
 
       expect(this.plugin.hooks).toEqual({
-        'before:deploy:deploy': this.plugin._beforeDeploy,
+        'before:package:finalize': this.plugin._beforeDeploy,
         'after:deploy:deploy': this.plugin._afterDeploy,
       });
     });
