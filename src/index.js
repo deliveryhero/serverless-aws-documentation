@@ -20,7 +20,7 @@ class ServerlessAWSDocumentation {
     this._afterDeploy = this.afterDeploy.bind(this)
 
     this.hooks = {
-      'before:deploy:deploy': this._beforeDeploy,
+      'before:package:finalize': this._beforeDeploy,
       'after:deploy:deploy': this._afterDeploy,
     };
 
