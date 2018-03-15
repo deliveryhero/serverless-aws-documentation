@@ -1642,6 +1642,693 @@ describe('ServerlessAWSDocumentation', function () {
         },
       });
     });
+
+    it('should also add models that are defined in swagger', function () {
+      delete this.plugin.customVars.documentation
+
+      this.plugin.customVars.documentation = {
+        'swagger': '1.0',
+        'definitions': {
+          'NoSchema': {
+            'type': 'object',
+            'properties': {
+              'number': {'type': 'number'},
+              'name': {'type': 'string'}
+            }
+          }
+        }
+      }
+
+      this.plugin.beforeDeploy()
+      expect(this.serverlessMock.service.getAllFunctions).toHaveBeenCalled()
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          NoSchemaModel: {
+            Properties: {
+              ContentType: 'application/json',
+              Name: 'NoSchema',
+              RestApiId: {
+                Ref: 'ApiGatewayRestApi'
+              },
+              Schema: {
+                properties: {
+                  name: {
+                    type: 'string'
+                  },
+                  number: {
+                    type: 'number'
+                  }
+                },
+                type: 'object'
+              }
+            },
+            Type: 'AWS::ApiGateway::Model'
+          }
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        }
+      })
+    })
+
+    it('should add headers, query and path params from swagger', function () {
+      delete this.plugin.customVars.documentation
+
+      this.serverlessMock.service._functionNames = ['test']
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+            }
+          }]
+        }
+      }
+
+      this.plugin.customVars.documentation = {
+        swagger: '1.0',
+        paths: {
+          '/some/path': {
+            post: {
+              consumes: ['application/json'],
+              produces: ['application/json'],
+              parameters: [
+                {
+                  name: 'x-my-header',
+                  in: 'header',
+                  required: true,
+                  type: 'string'
+                },
+                {
+                  name: 'my-param',
+                  in: 'query',
+                  required: false,
+                  type: 'string'
+                },
+                {
+                  name: 'another-param',
+                  in: 'path',
+                  required: false,
+                  type: 'string'
+                }
+              ]
+            }
+          }
+        }
+      }
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources
+
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {},
+      }
+
+      this.plugin.beforeDeploy()
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          somepath_post: {
+            some: 'configuration',
+            Properties: {
+              RequestParameters: {
+                'method.request.header.x-my-header': true,
+                'method.request.querystring.my-param': false,
+                'method.request.path.another-param': false,
+              }
+            },
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      })
+    })
+
+    it('should link the request body directly to an existing object', function () {
+      delete this.plugin.customVars.documentation
+
+      this.serverlessMock.service._functionNames = ['test']
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+            }
+          }]
+        }
+      }
+
+      this.plugin.customVars.documentation = {
+        swagger: '1.0',
+        paths: {
+          '/some/path': {
+            post: {
+              consumes: ['application/json'],
+              produces: ['application/json'],
+              parameters: [
+                {
+                  name: 'x-my-header',
+                  in: 'header',
+                  required: true,
+                  type: 'string'
+                },
+                {
+                  name: 'my-param',
+                  in: 'query',
+                  required: false,
+                  type: 'string'
+                },
+                {
+                  in: 'body',
+                  name: 'NoSchema',
+                  required: true,
+                  schema: {
+                    $ref: '#/definitions/NoSchema'
+                  }
+                }
+              ]
+            }
+          }
+        },
+        definitions: {
+          'NoSchema': {
+            'type': 'object',
+            'properties': {
+              'number': {'type': 'number'},
+              'name': {'type': 'string'}
+            }
+          }
+        }
+      }
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources
+
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {},
+      }
+
+      this.plugin.beforeDeploy()
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          NoSchemaModel: {
+            Properties: {
+              ContentType: 'application/json',
+              Name: 'NoSchema',
+              RestApiId: {
+                Ref: 'ApiGatewayRestApi'
+              },
+              Schema: {
+                properties: {
+                  name: {
+                    type: 'string'
+                  },
+                  number: {
+                    type: 'number'
+                  }
+                },
+                type: 'object'
+              }
+            },
+            Type: 'AWS::ApiGateway::Model'
+          },
+          somepath_post: {
+            some: 'configuration',
+            DependsOn: ['NoSchemaModel'],
+            Properties: {
+              RequestParameters: {
+                'method.request.header.x-my-header': true,
+                'method.request.querystring.my-param': false,
+              },
+              RequestModels: {
+                'application/json': 'NoSchema',
+              }
+            },
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      })
+    })
+
+    it('should link the response body directly to an existing object', function () {
+      delete this.plugin.customVars.documentation
+
+      this.serverlessMock.service._functionNames = ['test']
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+            }
+          }]
+        }
+      }
+
+      this.plugin.customVars.documentation = {
+        swagger: '1.0',
+        paths: {
+          '/some/path': {
+            post: {
+              consumes: ['application/json'],
+              produces: ['application/json'],
+              responses: {
+                200: {
+                  description: "OK",
+                  schema: {
+                    $ref: "#/definitions/NoSchema"
+                  }
+                },
+                400: {
+                  description: "BR"
+                },
+                500: {
+                  description: "ERR"
+                }
+              }
+            }
+          }
+        },
+        definitions: {
+          'NoSchema': {
+            'type': 'object',
+            'properties': {
+              'number': {'type': 'number'},
+              'name': {'type': 'string'}
+            }
+          }
+        }
+      }
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources
+
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {},
+      }
+
+      this.plugin.beforeDeploy()
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          NoSchemaModel: {
+            Properties: {
+              ContentType: 'application/json',
+              Name: 'NoSchema',
+              RestApiId: {
+                Ref: 'ApiGatewayRestApi'
+              },
+              Schema: {
+                properties: {
+                  name: {
+                    type: 'string'
+                  },
+                  number: {
+                    type: 'number'
+                  }
+                },
+                type: 'object'
+              }
+            },
+            Type: 'AWS::ApiGateway::Model'
+          },
+          somepath_post: {
+            some: 'configuration',
+            DependsOn: ['NoSchemaModel'],
+            Properties: {
+              MethodResponses: [
+                {
+                  StatusCode: '200',
+                  ResponseModels: { 'application/json': 'NoSchema'}
+                },
+                {
+                  StatusCode: '400'
+                },
+                {
+                  StatusCode: '500'
+                }
+              ]
+            },
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      })
+    })
+
+    it('should create the request body as a new model if not a direct link', function () {
+      delete this.plugin.customVars.documentation
+
+      this.serverlessMock.service._functionNames = ['test']
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+            }
+          }]
+        }
+      }
+
+      this.plugin.customVars.documentation = {
+        swagger: '1.0',
+        paths: {
+          '/some/path': {
+            post: {
+              consumes: ['application/json'],
+              produces: ['application/json'],
+              parameters: [
+                {
+                  name: 'x-my-header',
+                  in: 'header',
+                  required: true,
+                  type: 'string'
+                },
+                {
+                  name: 'my-param',
+                  in: 'query',
+                  required: false,
+                  type: 'string'
+                },
+                {
+                  name: 'NoSchema',
+                  in: 'body',
+                  required: true,
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      number: {type: 'number'},
+                      name: {type: 'string'}
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources
+
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {},
+      }
+
+      this.plugin.beforeDeploy()
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          NoSchemaModel: {
+            Properties: {
+              ContentType: 'application/json',
+              Name: 'NoSchema',
+              RestApiId: {
+                Ref: 'ApiGatewayRestApi'
+              },
+              Schema: {
+                properties: {
+                  name: {
+                    type: 'string'
+                  },
+                  number: {
+                    type: 'number'
+                  }
+                },
+                type: 'object'
+              }
+            },
+            Type: 'AWS::ApiGateway::Model'
+          },
+          somepath_post: {
+            some: 'configuration',
+            DependsOn: ['NoSchemaModel'],
+            Properties: {
+              RequestParameters: {
+                'method.request.header.x-my-header': true,
+                'method.request.querystring.my-param': false,
+              },
+              RequestModels: {
+                'application/json': 'NoSchema',
+              }
+            },
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      })
+    })
+
+    it('should resolve nested links to other swagger definitions', function () {
+      delete this.plugin.customVars.documentation
+
+      this.serverlessMock.service._functionNames = ['test']
+      this.serverlessMock.service._functions = {
+        test: {
+          events: [{
+            http: {
+              path: 'some/path',
+              method: 'post',
+            }
+          }]
+        }
+      }
+
+      this.plugin.customVars.documentation = {
+        swagger: '1.0',
+        paths: {
+          '/some/path': {
+            post: {
+              consumes: ['application/json'],
+              produces: ['application/json'],
+              parameters: [
+                {
+                  name: 'x-my-header',
+                  in: 'header',
+                  required: true,
+                  type: 'string'
+                },
+                {
+                  name: 'my-param',
+                  in: 'query',
+                  required: false,
+                  type: 'string'
+                },
+                {
+                  name: 'NoSchema',
+                  in: 'body',
+                  required: true,
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      number: {type: 'number'},
+                      name: {type: 'string'},
+                      extra: {
+                        $ref: '#/definitions/Extra'
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        definitions: {
+          'Extra': {
+            'type': 'object',
+            'properties': {
+              'number': {'type': 'number'},
+              'sub': {
+                $ref: '#/definitions/Sub'
+              }
+            }
+          },
+          'Sub': {
+            'type': 'object',
+            'properties': {
+              'more': {'type': 'string'}
+            }
+          }
+        }
+      }
+
+      const resources = this.serverlessMock.service.provider.compiledCloudFormationTemplate.Resources
+
+      resources.somepath_post = {
+        some: 'configuration',
+        Properties: {},
+      }
+
+      this.plugin.beforeDeploy()
+
+      expect(this.serverlessMock.service.provider.compiledCloudFormationTemplate).toEqual({
+        Resources: {
+          ExistingResource: {
+            with: 'configuration',
+          },
+          ExtraModel: {
+            Properties: {
+              ContentType: 'application/json',
+              Name: 'Extra',
+              RestApiId: {
+                Ref: 'ApiGatewayRestApi'
+              },
+              Schema: {
+                properties: {
+                  'number': {
+                    'type': 'number'
+                  },
+                  'sub': {
+                    '$ref': {
+                      'Fn::Join': [
+                        '/',
+                        [
+                          'https://apigateway.amazonaws.com/restapis',
+                          {
+                            'Ref': 'ApiGatewayRestApi'
+                          },
+                          'models',
+                          'Sub'
+                        ]
+                      ]
+                    }
+                  }
+                },
+                type: 'object'
+              }
+            },
+            DependsOn: ['SubModel'],
+            Type: 'AWS::ApiGateway::Model'
+          },
+          SubModel: {
+            Properties: {
+              ContentType: 'application/json',
+              Name: 'Sub',
+              RestApiId: {
+                Ref: 'ApiGatewayRestApi'
+              },
+              Schema: {
+                properties: {
+                  more: {type: 'string'}
+                },
+                type: 'object'
+              }
+            },
+            Type: 'AWS::ApiGateway::Model'
+          },
+          NoSchemaModel: {
+            Properties: {
+              ContentType: 'application/json',
+              Name: 'NoSchema',
+              RestApiId: {
+                Ref: 'ApiGatewayRestApi'
+              },
+              Schema: {
+                properties: {
+                  name: {
+                    type: 'string'
+                  },
+                  number: {
+                    type: 'number'
+                  },
+                  extra: {
+                    $ref: {
+                      'Fn::Join': [
+                        '/',
+                        [
+                          'https://apigateway.amazonaws.com/restapis',
+                          {
+                            Ref: 'ApiGatewayRestApi'
+                          },
+                          'models',
+                          'Extra'
+                        ]
+                      ]
+                    }
+                  }
+                },
+                type: 'object'
+              }
+            },
+            DependsOn: ['ExtraModel'],
+            Type: 'AWS::ApiGateway::Model'
+          },
+          somepath_post: {
+            some: 'configuration',
+            DependsOn: ['NoSchemaModel'],
+            Properties: {
+              RequestParameters: {
+                'method.request.header.x-my-header': true,
+                'method.request.querystring.my-param': false,
+              },
+              RequestModels: {
+                'application/json': 'NoSchema',
+              }
+            },
+          },
+        },
+        Outputs: {
+          AwsDocApiId: {
+            Description: 'API ID',
+            Value: {
+              Ref: 'ApiGatewayRestApi',
+            },
+          }
+        },
+      })
+    })
+
+
+
   });
 
   describe('after deploy', function () {

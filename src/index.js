@@ -1,6 +1,7 @@
 'use strict';
 const documentation = require('./documentation');
 const models = require('./models');
+const swagger = require('./swagger');
 
 class ServerlessAWSDocumentation {
   constructor(serverless, options) {
@@ -9,6 +10,7 @@ class ServerlessAWSDocumentation {
     this.provider = 'aws'
 
     Object.assign(this, models);
+    Object.assign(this, swagger);
     Object.assign(this, documentation());
 
     this.customVars = this.serverless.variables.service.custom;
@@ -28,7 +30,92 @@ class ServerlessAWSDocumentation {
   }
 
   beforeDeploy() {
+
     if (!(this.customVars && this.customVars.documentation)) return;
+
+    if (this.customVars.documentation.swagger) {
+      // Handle references to models
+      this.replaceSwaggerDefinitions(this.customVars.documentation.definitions)
+      //Map swagger into documentation models
+      const swaggerDefs = this.customVars.documentation.definitions
+      if (swaggerDefs) {
+        const swaggerModels = Object.keys(swaggerDefs).map(definitionName => {
+          return {
+            name: definitionName,
+            description: swaggerDefs[definitionName].description,
+            contentType: 'application/json',
+            schema: swaggerDefs[definitionName]
+          }
+        })
+        this.customVars.documentation.models = swaggerModels
+      } else {
+        this.customVars.documentation.models = []
+      }
+
+      //Find http events and map the swagger across
+      this.serverless.service.getAllFunctions().forEach(functionName => {
+        const func = this.serverless.service.getFunction(functionName)
+        if (func.events) {
+          func.events.forEach(event => {
+            if (event.http) {
+              // look up the path in the swagger
+              const path = this.customVars.documentation.paths['/' + event.http.path]
+              if (path) {
+                const method = path[event.http.method]
+                const methodDoc = {'requestHeaders': [], 'pathParams': [], 'queryParams': [],
+                  'requestModels': {}}
+                if ( method.parameters ) {
+                  method.parameters.forEach(param => {
+                    if (param.in === 'header') {
+                      methodDoc['requestHeaders'].push({
+                        name: param.name,
+                        description: param.description,
+                        required: param.required
+                      })
+                    } else if (param.in === 'path') {
+                      methodDoc['pathParams'].push({
+                        name: param.name,
+                        description: param.description,
+                        required: param.required
+                      })
+                    } else if (param.in === 'query') {
+                      methodDoc['queryParams'].push({
+                        name: param.name,
+                        description: param.description,
+                        required: param.required
+                      })
+                    } else if (param.in === 'body') {
+                      methodDoc['requestModels']['application/json'] =
+                        this.extractModel(param, this.customVars.documentation.models);
+                    }
+                  })
+                }
+
+                if ( method.responses ) {
+                  methodDoc['methodResponses'] = []
+                  Object.keys(method.responses).map(statusCode => {
+                    const response = method.responses[statusCode];
+                    const methodResponse = {
+                      statusCode: ""+statusCode,
+                    };
+
+                    if ( response.schema ) {
+                      const responseModels = {};
+                      responseModels['application/json'] =
+                        this.extractModel(response, this.customVars.documentation.models);
+                      methodResponse['responseModels'] = responseModels;
+                    }
+                    methodDoc['methodResponses'].push(methodResponse);
+                  });
+                }
+
+                event.http.documentation = methodDoc
+              }
+            }
+          })
+        }
+      })
+    }
 
     this.cfTemplate = this.serverless.service.provider.compiledCloudFormationTemplate;
 
