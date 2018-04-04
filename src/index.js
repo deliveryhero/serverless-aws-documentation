@@ -28,13 +28,28 @@ class ServerlessAWSDocumentation {
   }
 
   beforeDeploy() {
+    console.log('before deploy');
     if (!(this.customVars && this.customVars.documentation)) return;
 
     this.cfTemplate = this.serverless.service.provider.compiledCloudFormationTemplate;
 
+    let restApiId = {
+      Ref: 'ApiGatewayRestApi',
+    };
+
+    console.log('Checking if api gateway is defined...');
+    console.log(JSON.stringify(this.serverless.service.provider));
+    console.log(JSON.stringify(this.serverless.service.provider.apiGateway));
+    if (this.serverless.service.provider.apiGateway && this.serverless.service.provider.apiGateway.restApiId) {
+      console.log('It is');
+      restApiId = this.serverless.service.provider.apiGateway.restApiId
+    }
+
     if (this.customVars.documentation.models) {
+      const cfModelCreator = this.createCfModel(restApiId);
+
       // Add model resources
-      const models = this.customVars.documentation.models.map(this.createCfModel)
+      const models = this.customVars.documentation.models.map(cfModelCreator)
         .reduce((modelObj, model) => {
           modelObj[`${model.Properties.Name}Model`] = model;
           return modelObj;
@@ -51,13 +66,12 @@ class ServerlessAWSDocumentation {
     // Add models
     this.cfTemplate.Outputs.AwsDocApiId = {
       Description: 'API ID',
-      Value: {
-        Ref: 'ApiGatewayRestApi',
-      },
+      Value: restApiId,
     };
   }
 
   afterDeploy() {
+    console.log('after deploy');
     if (!this.customVars.documentation) return;
     const stackName = this.serverless.providers.aws.naming.getStackName(this.options.stage);
     return this.serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
