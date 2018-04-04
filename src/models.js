@@ -1,6 +1,6 @@
 'use strict';
 
-function replaceModelRefs(cfModel) {
+function replaceModelRefs(restApiId, cfModel) {
     if (!cfModel.Properties || !cfModel.Properties.Schema || Object.keys(cfModel.Properties.Schema).length == 0) {
       return cfModel;
     }
@@ -15,7 +15,7 @@ function replaceModelRefs(cfModel) {
                             '/',
                             [
                                 'https://apigateway.amazonaws.com/restapis',
-                                { Ref: 'ApiGatewayRestApi' },
+                                restApiId,
                                 'models',
                                 match[1]
                             ]
@@ -40,18 +40,20 @@ function replaceModelRefs(cfModel) {
 }
 
 module.exports = {
-  createCfModel: function createCfModel(model) {
-    return replaceModelRefs({
-      Type: 'AWS::ApiGateway::Model',
-      Properties: {
-        RestApiId: {
-          Ref: 'ApiGatewayRestApi',
-        },
-        ContentType: model.contentType,
-        Name: model.name,
-        Schema: model.schema || {},
-      },
-    });
+  createCfModel: function createCfModel(restApiId) {
+    return function(model) {
+      return replaceModelRefs(restApiId,
+        {
+          Type: 'AWS::ApiGateway::Model',
+          Properties: {
+            RestApiId: restApiId,
+            ContentType: model.contentType,
+            Name: model.name,
+            Schema: model.schema || {},
+          },
+        }
+      );
+    }
   },
 
   addModelDependencies: function addModelDependencies(models, resource) {

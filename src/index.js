@@ -32,9 +32,21 @@ class ServerlessAWSDocumentation {
 
     this.cfTemplate = this.serverless.service.provider.compiledCloudFormationTemplate;
 
+    // The default rest API reference
+    let restApiId = {
+      Ref: 'ApiGatewayRestApi',
+    };
+
+    // Use the provider API gateway if one has been provided.
+    if (this.serverless.service.provider.apiGateway && this.serverless.service.provider.apiGateway.restApiId) {
+      restApiId = this.serverless.service.provider.apiGateway.restApiId
+    }
+
     if (this.customVars.documentation.models) {
+      const cfModelCreator = this.createCfModel(restApiId);
+
       // Add model resources
-      const models = this.customVars.documentation.models.map(this.createCfModel)
+      const models = this.customVars.documentation.models.map(cfModelCreator)
         .reduce((modelObj, model) => {
           modelObj[`${model.Properties.Name}Model`] = model;
           return modelObj;
@@ -51,9 +63,7 @@ class ServerlessAWSDocumentation {
     // Add models
     this.cfTemplate.Outputs.AwsDocApiId = {
       Description: 'API ID',
-      Value: {
-        Ref: 'ApiGatewayRestApi',
-      },
+      Value: restApiId,
     };
   }
 
