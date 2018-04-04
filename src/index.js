@@ -28,20 +28,17 @@ class ServerlessAWSDocumentation {
   }
 
   beforeDeploy() {
-    console.log('before deploy');
     if (!(this.customVars && this.customVars.documentation)) return;
 
     this.cfTemplate = this.serverless.service.provider.compiledCloudFormationTemplate;
 
+    // The default rest API reference
     let restApiId = {
       Ref: 'ApiGatewayRestApi',
     };
 
-    console.log('Checking if api gateway is defined...');
-    console.log(JSON.stringify(this.serverless.service.provider));
-    console.log(JSON.stringify(this.serverless.service.provider.apiGateway));
+    // Use the provider API gateway if one has been provided.
     if (this.serverless.service.provider.apiGateway && this.serverless.service.provider.apiGateway.restApiId) {
-      console.log('It is');
       restApiId = this.serverless.service.provider.apiGateway.restApiId
     }
 
@@ -71,7 +68,6 @@ class ServerlessAWSDocumentation {
   }
 
   afterDeploy() {
-    console.log('after deploy');
     if (!this.customVars.documentation) return;
     const stackName = this.serverless.providers.aws.naming.getStackName(this.options.stage);
     return this.serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
