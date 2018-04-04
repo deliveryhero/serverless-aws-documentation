@@ -577,12 +577,6 @@ describe('ServerlessAWSDocumentation', function () {
         schema: {
           type: 'object'
         }
-      }, {
-        name: 'CreateResponseXml',
-        contentType: "application/xml",
-        schema: {
-          type: 'object'
-        }
       }];
       this.serverlessMock.service._functionNames = ['test'];
       this.serverlessMock.service._functions = {
@@ -599,7 +593,6 @@ describe('ServerlessAWSDocumentation', function () {
                     statusCode: 200,
                     responseModels: {
                       'application/json': 'CreateResponseJson',
-                      'application/xml': 'CreateResponseXml',
                     },
                     responseHeaders: [{
                       name: 'x-header',
@@ -633,13 +626,12 @@ describe('ServerlessAWSDocumentation', function () {
           },
           somepath_post: {
             some: 'configuration',
-            DependsOn: ['CreateResponseJsonModel', 'CreateResponseXmlModel'],
+            DependsOn: ['CreateResponseJsonModel'],
             Properties: {
               MethodResponses: [{
                 StatusCode: '200',
                 ResponseModels: {
                   'application/json': 'CreateResponseJson',
-                  'application/xml': 'CreateResponseXml',
                 },
                 ResponseParameters: {
                   'method.response.header.x-header': true,
@@ -659,19 +651,6 @@ describe('ServerlessAWSDocumentation', function () {
                 type: 'object'
               }
             }
-          },
-          CreateResponseXmlModel: {
-            Type: 'AWS::ApiGateway::Model',
-            Properties: {
-              RestApiId: {
-                'Fn::ImportValue': 'PublicApiGatewayRestApi'
-              },
-              ContentType: 'application/xml',
-              Name:'CreateResponseXml',
-              Schema: {
-                type: 'object'
-              }
-            },
           },
         },
         Outputs: {
