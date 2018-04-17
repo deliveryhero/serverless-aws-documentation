@@ -84,6 +84,7 @@ describe('ServerlessAWSDocumentation', function () {
       expect(this.plugin.hooks).toEqual({
         'before:package:finalize': this.plugin._beforeDeploy,
         'after:deploy:deploy': this.plugin._afterDeploy,
+        'downloadDocumentation:downloadDocumentation': this.plugin._download,
       });
     });
 
