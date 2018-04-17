@@ -298,7 +298,7 @@ ApiGatewayMethod{normalizedPath}{normalizedMethod}:
 
 See the Serverless documentation for more information on [resource naming](https://serverless.com/framework/docs/providers/aws/guide/resources/), and the AWS documentation for more information on [request parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration.html#cfn-apigateway-method-integration-requestparameters).
 
-### Download documentation from AWS APi Gateway
+### Download documentation from AWS API Gateway
 
 To download the deployed documentation you just need to use `serverless downloadDocumentation --outputFile=filename.ext`.
 For `yml` or `yaml` extensions application/yaml content will be downloaded from AWS. In any other case - application/json. 
