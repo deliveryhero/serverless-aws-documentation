@@ -1,12 +1,15 @@
 'use strict';
 const documentation = require('./documentation');
 const models = require('./models');
+const fs = require('fs');
+const downloadDocumentation = require('./downloadDocumentation')
 
 class ServerlessAWSDocumentation {
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
-    this.provider = 'aws'
+    this.provider = 'aws';
+    this.fs = fs;
 
     Object.assign(this, models);
     Object.assign(this, documentation());
@@ -18,13 +21,29 @@ class ServerlessAWSDocumentation {
 
     this._beforeDeploy = this.beforeDeploy.bind(this)
     this._afterDeploy = this.afterDeploy.bind(this)
+    this._download = downloadDocumentation.downloadDocumentation.bind(this)
 
     this.hooks = {
       'before:package:finalize': this._beforeDeploy,
       'after:deploy:deploy': this._afterDeploy,
+      'downloadDocumentation:downloadDocumentation': this._download
     };
 
     this.documentationParts = [];
+
+    this.commands = {
+        downloadDocumentation: {
+            usage: 'Download API Gateway documentation from AWS',
+            lifecycleEvents: [
+              'downloadDocumentation',
+            ],
+            options: {
+                outputFileName: {
+                    required: true,
+                },
+            },
+        }
+    };
   }
 
   beforeDeploy() {
