@@ -1,9 +1,8 @@
 describe('ServerlessAWSDocumentation', function () {
-  const objectUnderTest = require('./downloadDocumentation.js');
+  let objectUnderTest;
 
   beforeEach(() => {
-    objectUnderTest.restApiId = 'testApiId';
-
+    objectUnderTest = require('./downloadDocumentation.js');
     objectUnderTest.fs = {
       writeFileSync: jasmine.createSpy('fs')
     };
@@ -25,6 +24,10 @@ describe('ServerlessAWSDocumentation', function () {
         }
       }
     };
+  });
+
+  afterEach(() => {
+    delete require.cache[require.resolve('./downloadDocumentation.js')];
   });
 
   describe('downloadDocumentation', () => {
@@ -85,6 +88,34 @@ describe('ServerlessAWSDocumentation', function () {
       };
       objectUnderTest.serverless.providers.aws.request.and.returnValue(Promise.reject('reason'));
       return objectUnderTest.downloadDocumentation().catch(() => {
+        done();
+      });
+    });
+
+    it('should get rest api id', (done) => {
+      objectUnderTest.serverless.providers.aws.request.and.returnValue(Promise.resolve({
+        Stacks: [{
+          Outputs: [{
+            OutputKey: 'some-key-1',
+            OutputValue: 'some-value-1',
+          }, {
+            OutputKey: 'AwsDocApiId',
+            OutputValue: 'testRestApiId',
+          }, {
+            OutputKey: 'some-key-2',
+            OutputValue: 'some-value-2',
+          }]
+        }]
+      }));
+
+      return objectUnderTest._getRestApiId('testStackName').then((restApiId) => {
+        expect(restApiId).toBe('testRestApiId');
+        expect(objectUnderTest.serverless.providers.aws.request).toHaveBeenCalledWith(
+          'CloudFormation',
+          'describeStacks',
+          jasmine.objectContaining({StackName: 'testStackName'}), 'testStage', 'testRegion'
+        );
+
         done();
       });
     });
