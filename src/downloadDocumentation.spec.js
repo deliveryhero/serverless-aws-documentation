@@ -28,9 +28,9 @@ describe('ServerlessAWSDocumentation', function () {
   });
 
   describe('downloadDocumentation', () => {
-    it('should successfully download documentation', (done) => {
+    it('should successfully download documentation, unknown file extension', (done) => {
       objectUnderTest.options = {
-        outputFileName: 'test.json',
+        outputFileName: 'test.txt',
       };
       objectUnderTest._getRestApiId = () => {
         return Promise.resolve('testRestApiId')
@@ -40,7 +40,37 @@ describe('ServerlessAWSDocumentation', function () {
         body: 'some body',
       }));
       return objectUnderTest.downloadDocumentation().then(() => {
-        expect(objectUnderTest.fs.writeFileSync).toHaveBeenCalledWith('test.json', 'some body');
+        expect(objectUnderTest.serverless.providers.aws.request).toHaveBeenCalledWith('APIGateway', 'getExport', {
+          stageName: 'testStage',
+          restApiId: 'testRestApiId',
+          exportType: 'swagger',
+          accepts: 'application/json',
+        });
+        expect(objectUnderTest.fs.writeFileSync).toHaveBeenCalledWith('test.txt', 'some body');
+
+        done();
+      });
+    });
+
+    it('should successfully download documentation, yaml extension', (done) => {
+      objectUnderTest.options = {
+        outputFileName: 'test.yml',
+      };
+      objectUnderTest._getRestApiId = () => {
+        return Promise.resolve('testRestApiId')
+      };
+
+      objectUnderTest.serverless.providers.aws.request.and.returnValue(Promise.resolve({
+        body: 'some body',
+      }));
+      return objectUnderTest.downloadDocumentation().then(() => {
+        expect(objectUnderTest.serverless.providers.aws.request).toHaveBeenCalledWith('APIGateway', 'getExport', {
+          stageName: 'testStage',
+          restApiId: 'testRestApiId',
+          exportType: 'swagger',
+          accepts: 'application/yaml',
+        });
+        expect(objectUnderTest.fs.writeFileSync).toHaveBeenCalledWith('test.yml', 'some body');
 
         done();
       });
