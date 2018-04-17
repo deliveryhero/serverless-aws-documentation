@@ -13,6 +13,7 @@ class ServerlessAWSDocumentation {
 
     Object.assign(this, models);
     Object.assign(this, documentation());
+    Object.assign(this, downloadDocumentation);
 
     this.customVars = this.serverless.variables.service.custom;
     const naming = this.serverless.providers.aws.naming;
