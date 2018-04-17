@@ -2,7 +2,7 @@
 const documentation = require('./documentation');
 const models = require('./models');
 const fs = require('fs');
-const downloadDocumentation = require('./downloadDocumentation')
+const downloadDocumentation = require('./downloadDocumentation');
 
 class ServerlessAWSDocumentation {
   constructor(serverless, options) {
