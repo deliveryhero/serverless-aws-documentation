@@ -48,6 +48,8 @@ class ServerlessAWSDocumentation {
   }
 
   beforeDeploy() {
+    // reinitialize customVars, to handle dynamic config generation
+    this.customVars = this.serverless.variables.service.custom;
     if (!(this.customVars && this.customVars.documentation)) return;
 
     this.cfTemplate = this.serverless.service.provider.compiledCloudFormationTemplate;
