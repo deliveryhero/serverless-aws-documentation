@@ -42,17 +42,22 @@ function replaceModelRefs(restApiId, cfModel) {
 module.exports = {
   createCfModel: function createCfModel(restApiId) {
     return function(model) {
-      return replaceModelRefs(restApiId,
-        {
-          Type: 'AWS::ApiGateway::Model',
-          Properties: {
-            RestApiId: restApiId,
-            ContentType: model.contentType,
-            Name: model.name,
-            Schema: model.schema || {},
-          },
-        }
-      );
+
+      let cfModel = {
+        Type: 'AWS::ApiGateway::Model',
+        Properties: {
+          RestApiId: restApiId,
+          ContentType: model.contentType,
+          Name: model.name,
+          Schema: model.schema || {},
+        },
+      }
+
+      if (model.description) {
+        cfModel.Properties.Description = model.description
+      }
+
+      return replaceModelRefs(restApiId, cfModel)
     }
   },
 
