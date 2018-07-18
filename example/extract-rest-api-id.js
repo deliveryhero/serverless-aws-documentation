@@ -22,7 +22,7 @@ stdin.on('data', function (chunk) {
 })
 
 stdin.on('end', function () {
-  let inputJSON = inputChunks.join()
+  let inputJSON = inputChunks.join('')
   let parsedData = JSON.parse(inputJSON)
   parsedData.items.forEach(function (curr) {
     if (curr.name === targetRestApiName) {
