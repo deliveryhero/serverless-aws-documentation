@@ -40,7 +40,10 @@ class ServerlessAWSDocumentation {
             ],
             options: {
                 outputFileName: {
-                    required: true,
+                  required: true,
+                },
+                extensions: {
+                    required: false,
                 },
             },
         }
