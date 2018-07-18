@@ -141,6 +141,7 @@ describe('ServerlessAWSDocumentation', function () {
               ContentType: 'application/json',
               Name: 'TestModel',
               Schema: 'some complex schema',
+              Description: 'the test model schema',
             },
           },
           OtherModelModel: {
@@ -152,6 +153,7 @@ describe('ServerlessAWSDocumentation', function () {
               ContentType: 'application/json',
               Name: 'OtherModel',
               Schema: 'some even more complex schema',
+              Description: 'the other test model schema',
             },
           },
           NoSchemaModelModel: {
@@ -163,6 +165,7 @@ describe('ServerlessAWSDocumentation', function () {
               ContentType: 'application/json',
               Name: 'NoSchemaModel',
               Schema: {},
+              Description: 'the other test model schema',
             },
           },
           ExistingResource: {

@@ -58,6 +58,7 @@ describe('ServerlessAWSDocumentation', function() {
             let modelInput = {
                 contentType: 'application/json',
                 name: 'TestModel',
+                description: 'Test description',
                 schema: {
                     type: 'object',
                     properties: {
@@ -98,7 +99,8 @@ describe('ServerlessAWSDocumentation', function() {
                                 }
                             }
                         }
-                    }
+                    },
+                    Description: 'Test description',
                 },
                 DependsOn: [
                     'OtherModelNameModel'
