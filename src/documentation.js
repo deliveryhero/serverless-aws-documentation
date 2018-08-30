@@ -39,6 +39,12 @@ function determinePropertiesToGet (type) {
     case 'METHOD':
       result.push('tags')
       break;
+    case 'PATH_PARAMETER':
+    case 'QUERY_PARAMETER':
+    case 'REQUEST_HEADER':
+    case 'REQUEST_BODY':
+      result.push('required')
+      break;
   }
   return result
 
@@ -218,6 +224,7 @@ module.exports = function() {
       this.restApiId = result.Stacks[0].Outputs
         .filter(output => output.OutputKey === 'AwsDocApiId')
         .map(output => output.OutputValue)[0];
+
       return this._updateDocumentation();
     },
 
