@@ -9,6 +9,9 @@ module.exports = {
         stageName: this.serverless.service.provider.stage,
         restApiId: restApiId,
         exportType: 'swagger',
+        parameters: {
+          extensions: extensionType(this.options.extensions),
+        },
         accepts: createAWSContentType(this.options.outputFileName),
       });
     }).then((response) => {
@@ -43,5 +46,15 @@ function createAWSContentType(outputFileName) {
   }
 
   return awsContentType;
+}
+
+function extensionType(extensionArg) {
+  const possibleExtensions = ['integrations', 'apigateway', 'authorizers', 'postman'];
+
+  if (possibleExtensions.includes(extensionArg)) {
+    return extensionArg;
+  } else {
+    return 'integrations';
+  }
 }
 

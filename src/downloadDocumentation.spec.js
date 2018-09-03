@@ -47,6 +47,9 @@ describe('ServerlessAWSDocumentation', function () {
           stageName: 'testStage',
           restApiId: 'testRestApiId',
           exportType: 'swagger',
+          parameters: {
+            extensions: 'integrations',
+          },
           accepts: 'application/json',
         });
         expect(objectUnderTest.fs.writeFileSync).toHaveBeenCalledWith('test.txt', 'some body');
@@ -71,6 +74,37 @@ describe('ServerlessAWSDocumentation', function () {
           stageName: 'testStage',
           restApiId: 'testRestApiId',
           exportType: 'swagger',
+          parameters: {
+            extensions: 'integrations',
+          },
+          accepts: 'application/yaml',
+        });
+        expect(objectUnderTest.fs.writeFileSync).toHaveBeenCalledWith('test.yml', 'some body');
+
+        done();
+      });
+    });
+
+    it('should successfully download documentation, yaml extension, using an extensions argument', (done) => {
+      objectUnderTest.options = {
+        outputFileName: 'test.yml',
+        extensions: 'apigateway',
+      };
+      objectUnderTest._getRestApiId = () => {
+        return Promise.resolve('testRestApiId')
+      };
+
+      objectUnderTest.serverless.providers.aws.request.and.returnValue(Promise.resolve({
+        body: 'some body',
+      }));
+      return objectUnderTest.downloadDocumentation().then(() => {
+        expect(objectUnderTest.serverless.providers.aws.request).toHaveBeenCalledWith('APIGateway', 'getExport', {
+          stageName: 'testStage',
+          restApiId: 'testRestApiId',
+          exportType: 'swagger',
+          parameters: {
+            extensions: 'apigateway',
+          },
           accepts: 'application/yaml',
         });
         expect(objectUnderTest.fs.writeFileSync).toHaveBeenCalledWith('test.yml', 'some body');
