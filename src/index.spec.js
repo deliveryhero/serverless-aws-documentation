@@ -89,6 +89,7 @@ describe('ServerlessAWSDocumentation', function () {
     });
 
     it('shouldn\'t do anything if there are no custom variables', function () {
+      delete this.serverlessMock.variables.service.custom;
       delete this.plugin.customVars;
       this.plugin.beforeDeploy();
       expect(this.serverlessMock.service.getAllFunctions).not.toHaveBeenCalled();
