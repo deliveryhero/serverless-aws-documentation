@@ -247,6 +247,11 @@ module.exports = function() {
         if (resource.DependsOn.length === 0) {
           delete resource.DependsOn;
         }
+        
+        // If there is no documentation section, assume that models already exist in a shared apigateway
+        if(!this.customVars.documentation) {
+          delete resource.DependsOn;
+        }
       }
     },
 
