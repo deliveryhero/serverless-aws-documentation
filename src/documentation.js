@@ -137,6 +137,7 @@ module.exports = function() {
     },
 
     getGlobalDocumentationParts: function getGlobalDocumentationParts() {
+      if (!this.customVars.documentation) return;
       const globalDocumentation = this.customVars.documentation;
       this.createDocumentationParts(globalDocumentationParts, globalDocumentation, {});
     },
