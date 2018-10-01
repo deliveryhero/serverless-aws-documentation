@@ -53,7 +53,7 @@ class ServerlessAWSDocumentation {
   beforeDeploy() {
     this.customVars = this.serverless.variables.service.custom;
     
-    if (!(this.customVars && this.customVars.documentation)) return;
+    if (!this.customVars) return;
 
     this.cfTemplate = this.serverless.service.provider.compiledCloudFormationTemplate;
 
@@ -67,7 +67,8 @@ class ServerlessAWSDocumentation {
       restApiId = this.serverless.service.provider.apiGateway.restApiId
     }
 
-    if (this.customVars.documentation.models) {
+    // If there is no documentation section, assume that models already exist in a shared apigateway
+    if (this.customVars.documentation && this.customVars.documentation.models) {
       const cfModelCreator = this.createCfModel(restApiId);
 
       // Add model resources
@@ -76,6 +77,8 @@ class ServerlessAWSDocumentation {
           modelObj[`${model.Properties.Name}Model`] = model;
           return modelObj;
         }, {});
+
+      // dont assign if model exists in apigateway  
       Object.assign(this.cfTemplate.Resources, models);
     }
 
@@ -93,7 +96,7 @@ class ServerlessAWSDocumentation {
   }
 
   afterDeploy() {
-    if (!this.customVars.documentation) return;
+    // if (!this.customVars.documentation) return;
     const stackName = this.serverless.providers.aws.naming.getStackName(this.options.stage);
     return this.serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
       this.options.stage,
