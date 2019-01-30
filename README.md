@@ -23,7 +23,7 @@ To install this plugin, add `serverless-aws-documentation` to your package.json:
 npm install serverless-aws-documentation --save-dev
 ```
 
-Next, add the `serverless-aws-documenation` plugin in to serverless.yml file:
+Next, add the `serverless-aws-documentation` plugin in to serverless.yml file:
 If you don't already have a plugins section, create one that looks like this:
 
 ```YAML
