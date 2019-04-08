@@ -1,11 +1,11 @@
 {
   "name": "serverless-aws-documentation",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Serverless 1.0 plugin to add documentation and models to the serverless generated API Gateway",
   "main": "src/index.js",
   "scripts": {
     "codecov": "cat coverage/*/lcov.info | codecov",
-    "test": "istanbul cover -x \"src/index.spec.js\" jasmine ./src/index.spec.js ./src/documentation.spec.js ./src/models.spec.js",
+    "test": "istanbul cover -x \"src/index.spec.js\" jasmine ./src/index.spec.js ./src/documentation.spec.js ./src/models.spec.js ./src/downloadDocumentation.spec.js",
     "test:nocoverage": "jasmine ./src/index.spec.js"
   },
   "repository": "9cookies/serverless-aws-documentation",
