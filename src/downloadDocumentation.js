@@ -8,7 +8,7 @@ module.exports = {
       return aws.request('APIGateway', 'getExport', {
         stageName: this.serverless.service.provider.stage,
         restApiId: restApiId,
-        exportType: this.options.exportType,
+        exportType: this.options.exportType? this.options.exportType: 'swagger',
         parameters: {
           extensions: extensionType(this.options.extensions),
         },
