@@ -27,10 +27,10 @@ class ServerlessAWSDocumentation {
     this._download = downloadDocumentation.downloadDocumentation.bind(this)
 
     this.hooks = {
-      'before:package:finalize': this._beforeDeploy,
-      'after:deploy:deploy': this._afterDeploy,
-      'downloadDocumentation:downloadDocumentation': this._download
-    };
+			'before:package:finalize': this._beforeDeploy,
+			'after:package:finalize': this._afterDeploy,
+			'downloadDocumentation:downloadDocumentation': this._download
+		};
 
     this.documentationParts = [];
 
