@@ -194,7 +194,6 @@ module.exports = function() {
 						.map(eventTypes => eventTypes.http)
 						.forEach(currEvent => {
 							if (currEvent.documentation.tags.includes('BANKPARTNERS')) {
-								console.warn('these are bank routes', currEvent);
 								let key = functionName + currEvent.method + currEvent.path;
 								documentationObj[key] = currEvent;
 							}
