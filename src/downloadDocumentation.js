@@ -3,10 +3,10 @@
 module.exports = {
   downloadDocumentation: function () {
     const aws = this.serverless.providers.aws;
-    const stackName = aws.naming.getStackName(this.serverless.service.provider.stage);
+    const stackName = aws.naming.getStackName(aws.getStage());
     return this._getRestApiId(stackName).then((restApiId) => {
       return aws.request('APIGateway', 'getExport', {
-        stageName: this.serverless.service.provider.stage,
+        stageName: aws.getStage(),
         restApiId: restApiId,
         exportType: 'swagger',
         parameters: {
@@ -20,9 +20,10 @@ module.exports = {
   },
 
   _getRestApiId: function (stackName) {
-    return this.serverless.providers.aws.request('CloudFormation', 'describeStacks', {StackName: stackName},
-      this.serverless.service.provider.stage,
-      this.serverless.service.provider.region
+    const aws = this.serverless.providers.aws;
+    return aws.request('CloudFormation', 'describeStacks', {StackName: stackName},
+      aws.getStage(),
+      aws.getRegion()
     ).then((result) => {
       return result.Stacks[0].Outputs
         .filter(output => output.OutputKey === 'AwsDocApiId')

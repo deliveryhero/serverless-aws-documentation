@@ -15,6 +15,8 @@ describe('ServerlessAWSDocumentation', function () {
             }
           },
           request: jasmine.createSpy('aws request'),
+          getStage: () => 'testStage',
+          getRegion: () => 'testRegion'
         }
       },
       service: {
