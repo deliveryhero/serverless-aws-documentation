@@ -94,7 +94,7 @@ module.exports = function() {
     },
     
     _isSharedApi: function _isSharedApi(){
-      return !!this.serverless.service.provider.apiGateway.restApiId;
+      return this.serverless.service.provider.apiGateway ? !!this.serverless.service.provider.apiGateway.restApiId : false;
     },
 
     _updateDocumentation: function _updateDocumentation() {
