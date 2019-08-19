@@ -123,7 +123,6 @@ module.exports = function() {
         )
         .then(results => results.items.filter(part => {
             if (this._isSharedApi()){
-              console.log('---- filtering docpart with properties', part.properties);
               return JSON.parse(part.properties)[serverlessServicePropertyKey] === this.serverless.service.service;
             }
             return true;
@@ -141,7 +140,6 @@ module.exports = function() {
               part.properties[serverlessServicePropertyKey] = this.serverless.service.service;
             }
             part.properties = JSON.stringify(part.properties);
-            console.log('---- sending to createDocumentationPart', part.properties);            
             return aws.request('APIGateway', 'createDocumentationPart', part);
           });
         }, Promise.resolve()))
