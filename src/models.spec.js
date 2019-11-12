@@ -145,5 +145,27 @@ describe('ServerlessAWSDocumentation', function() {
             });
         });
 
+        it('should not crash with null values', () => {
+            let modelInput = {
+                contentType: 'application/json',
+                name: 'TestModel',
+                schema: {
+                    type: 'object',
+                    properties: {
+                        prop: {
+                            enum: ['test',  null],
+                            default: null
+                        }
+                    }
+                }
+            };
+
+            let modelExecution = function() {
+                objectUnderTest.createCfModel({
+                    Ref: 'ApiGatewayRestApi',
+                })(modelInput);
+            }
+            expect(modelExecution).not.toThrow();
+        });
     });
 })
