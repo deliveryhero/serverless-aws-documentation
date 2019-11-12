@@ -68,18 +68,19 @@ Your general documentation has to be nested in the custom variables section and 
 ```YAML
 custom:
   documentation:
-    info:
-      version: "2" # see note above about this being ignored
-      title: "Name of your API" # see note above about this being ignored
-      description: "This is the best API ever"
-      termsOfService: "http://www.example.com/terms-of-service"
-      contact:
-        name: "John Smith"
-        url: "http://www.example.com/me"
-        email: "js@example.com"
-      license:
-        name: "Licensing"
-        url: "http://www.example.com/licensing"
+    api:
+      info:
+        version: "2" # see note above about this being ignored
+        title: "Name of your API" # see note above about this being ignored
+        description: "This is the best API ever"
+        termsOfService: "http://www.example.com/terms-of-service"
+        contact:
+          name: "John Smith"
+          url: "http://www.example.com/me"
+          email: "js@example.com"
+        license:
+          name: "Licensing"
+          url: "http://www.example.com/licensing"
     tags:
       -
         name: "Data Creation"
@@ -104,7 +105,7 @@ Your documentation has to be nested in the `documentation` custom variable. You 
 documentation parts with the `description` and `summary` (or `title` for the API itself) properties. The summary is some sort of
 title and the description is for further explanation. You can see the expected format in the [Swagger v2 specification for the info object](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#info-object).
 
-On the upper level, under the `documentation` section, you describe your API in the `info` object.
+On the upper level, under the `documentation/api` section, you describe your API in the `info` object.
 In there you also can manually describe the version (needs to be a string). If you don't define the
 version, the version that API Gateway needs will automatically be generated. This auto version is a
 hash of the documentation you defined, so if you don't change your documentation, the documentation
