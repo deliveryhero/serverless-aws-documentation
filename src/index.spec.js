@@ -3314,12 +3314,8 @@ describe('ServerlessAWSDocumentation', function () {
     });
 
     it('should not delete another documentation parts in case of shared API usage', function (done) {
-      this.serverlessMock.service.provider =
-      {
-        ... this.serverlessMock.service.provider,
-        apiGateway: {
-          restApiId: 'superid',
-        },
+      this.serverlessMock.service.provider.apiGateway = {
+        restApiId: 'superid',
       };
 
       this.serverlessMock.providers.aws.request.and.callFake((api, method) => {
@@ -3337,10 +3333,10 @@ describe('ServerlessAWSDocumentation', function () {
             return Promise.resolve({
               items: [{
                 id: '123',
-                properties: JSON.stringify({'serverless-service': 'service1'})
+                properties: JSON.stringify({ 'serverless-service': 'service1' })
               }, {
                 id: '456',
-                properties: JSON.stringify({'serverless-service': 'service2'})
+                properties: JSON.stringify({ 'serverless-service': 'service2' })
               }],
             });
           case 'getDocumentationVersion':
