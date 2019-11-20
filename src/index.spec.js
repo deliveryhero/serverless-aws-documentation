@@ -3313,6 +3313,52 @@ describe('ServerlessAWSDocumentation', function () {
       });
     });
 
+    it('should not delete another documentation parts in case of shared API usage', function (done) {
+      this.serverlessMock.service.provider =
+      {
+        ... this.serverlessMock.service.provider,
+        apiGateway: {
+          restApiId: 'superid',
+        },
+      };
+
+      this.serverlessMock.providers.aws.request.and.callFake((api, method) => {
+        switch (method) {
+          case 'describeStacks':
+            return Promise.resolve({
+              Stacks: [{
+                Outputs: [{
+                  OutputKey: 'ApiId',
+                  OutputValue: 'superid',
+                }],
+              }],
+            });
+          case 'getDocumentationParts':
+            return Promise.resolve({
+              items: [{
+                id: '123',
+                properties: JSON.stringify({'serverless-service': 'service1'})
+              }, {
+                id: '456',
+                properties: JSON.stringify({'serverless-service': 'service2'})
+              }],
+            });
+          case 'getDocumentationVersion':
+            return Promise.reject(new Error('Invalid Documentation version specified'));
+          case 'deleteDocumentationPart':
+            return Promise.reject();
+          default:
+            return Promise.resolve();
+        }
+      });
+      this.serverlessMock.providers.aws.naming.getStackName.and.returnValue('superstack');
+
+      this.plugin.afterDeploy().then(() => {
+        expect(this.serverlessMock.providers.aws.request).not.toHaveBeenCalledWith('APIGateway', 'deleteDocumentationPart', jasmine.any(Object));
+        done();
+      });
+    });
+
     it('should generate different documentation versions for different documentation content', function() {
       this.serverlessMock.variables.service.custom.documentation.api = {
         description: 'this is an api',
