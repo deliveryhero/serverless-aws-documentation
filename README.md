@@ -81,13 +81,13 @@ custom:
         license:
           name: "Licensing"
           url: "http://www.example.com/licensing"
-    tags:
-      -
-        name: "Data Creation"
-        description: "Services to create things"
-      -
-        name: "Some other tag"
-        description: "A tag for other things"
+      tags:
+        -
+          name: "Data Creation"
+          description: "Services to create things"
+        -
+          name: "Some other tag"
+          description: "A tag for other things"
     authorizers:
       -
         name: "MyCustomAuthorizer"
