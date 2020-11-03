@@ -1,6 +1,6 @@
 'use strict'
 
-const reponseHeadersJson = {
+const responseHeadersJson = {
   'Access-Control-Allow-Origin': '*', // Required for CORS support to work
   'Access-Control-Allow-Credentials': true,
   'Access-Control-Expose-Headers': 'link',
@@ -18,7 +18,7 @@ module.exports.router = (event, context, callback) => {
 }
 
 function exampleMessageGet (event, context, callback) {
-  let headers = reponseHeadersJson
+  let headers = responseHeadersJson
   let scheme = event.headers['X-Forwarded-Proto']
   let host = event.headers.Host
   let path = event.requestContext.path.replace('example/message','example/do-something')
@@ -37,7 +37,7 @@ function exampleDoSomethingPost (event, context, callback) {
   if (body.constructor !== Array) {
     return {
       statusCode: 400,
-      headers: reponseHeadersJson,
+      headers: responseHeadersJson,
       body: JSON.stringify({
         message: 'The supplied request body must be a JSON array',
         statusCode: '400'
@@ -47,7 +47,7 @@ function exampleDoSomethingPost (event, context, callback) {
   let itemCount = body.length
   return {
     statusCode: 200,
-    headers: reponseHeadersJson,
+    headers: responseHeadersJson,
     body: JSON.stringify({
       result: 'Thanks for sending that data',
       submittedItems: itemCount
