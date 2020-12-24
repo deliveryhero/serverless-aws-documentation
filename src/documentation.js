@@ -111,10 +111,11 @@ module.exports = function() {
           return Promise.reject(err);
         })
         .then(() =>
-          aws.request('APIGateway', 'getDocumentationParts', {
-            restApiId: this.restApiId,
-            limit: 9999,
-          })
+          this.getDocumentationParts( 
+            { restApiId: this.restApiId, limit: 9999, }, 
+            { items : [] },
+            this.serverless.providers 
+          )
         )
         .then(results => results.items.map(
           part => aws.request('APIGateway', 'deleteDocumentationPart', {
@@ -134,6 +135,26 @@ module.exports = function() {
           documentationVersion: this.getDocumentationVersion(),
           stageName: this.options.stage,
         }));
+    },
+
+    getDocumentationParts: function getDocumentationParts(params, allData, providers) {
+      const aws = providers.aws;
+      return aws.request('APIGateway', 'getDocumentationParts', params)
+      .then((result) => {
+        console.info("\ndocumentation parts received: ",result.items.length);
+        console.info((result.position? "position : "+result.position : "" ));
+        if(result.items.length > 0) {
+            allData.items = allData.items.concat(result.items);
+        }
+        if (result.position) {
+            params.position = result.position;
+            return getDocumentationParts(params, allData, providers);
+        } 
+        else {
+          console.info("total documentation parts received : ",allData.items.length);
+          return allData;
+        }
+      });
     },
 
     getGlobalDocumentationParts: function getGlobalDocumentationParts() {
