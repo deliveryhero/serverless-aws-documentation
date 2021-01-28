@@ -6,6 +6,11 @@ This is a [Serverless](http://www.serverless.com) v1 plugin that adds support fo
 documentation and models (e.g. to export a Swagger JSON file with input/output definitions and full text
 documentation for API documentation).
 
+## Important notice
+This plugin is no longer maintained and therefore archived. 
+If you want to continue this project feel free to fork it and publish it under a new name.
+Unfortunately we can't transfer ownership of this project.
+
 ## What is AWS API Gateway documentation?
 
 Amazon introduced a new documentation feature for it's API Gateway on AWS at the end of 2016. With this you can add manually written documentation to all parts of API Gateway such as resources, requests, responses or single path or query parameters. When exporting Swagger from API Gateway these documentation is added to the other information to create a more human understandable documentation.
