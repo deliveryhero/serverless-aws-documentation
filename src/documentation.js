@@ -92,8 +92,13 @@ module.exports = function() {
         }
       });
     },
+    
+    _isSharedApi: function _isSharedApi(){
+      return this.serverless.service.provider.apiGateway ? !!this.serverless.service.provider.apiGateway.restApiId : false;
+    },
 
     _updateDocumentation: function _updateDocumentation() {
+      const serverlessServicePropertyKey = 'serverless-service';
       const aws = this.serverless.providers.aws;
       return aws.request('APIGateway', 'getDocumentationVersion', {
         restApiId: this.restApiId,
@@ -116,7 +121,13 @@ module.exports = function() {
             limit: 9999,
           })
         )
-        .then(results => results.items.map(
+        .then(results => results.items.filter(part => {
+            if (this._isSharedApi()){
+              return JSON.parse(part.properties)[serverlessServicePropertyKey] === this.serverless.service.service;
+            }
+            return true;
+          })          
+          .map(
           part => aws.request('APIGateway', 'deleteDocumentationPart', {
             documentationPartId: part.id,
             restApiId: this.restApiId,
@@ -125,6 +136,9 @@ module.exports = function() {
         .then(promises => Promise.all(promises))
         .then(() => this.documentationParts.reduce((promise, part) => {
           return promise.then(() => {
+            if (this._isSharedApi()) {
+              part.properties[serverlessServicePropertyKey] = this.serverless.service.service;
+            }
             part.properties = JSON.stringify(part.properties);
             return aws.request('APIGateway', 'createDocumentationPart', part);
           });
