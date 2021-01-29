@@ -35,13 +35,67 @@ function determinePropertiesToGet (type) {
   switch (type) {
     case 'API':
       result.push('tags', 'info')
-      break
+      break;
     case 'METHOD':
       result.push('tags')
-      break
+      break;
+    case 'PATH_PARAMETER':
+    case 'QUERY_PARAMETER':
+    case 'REQUEST_HEADER':
+    case 'REQUEST_BODY':
+      result.push('required')
+      break;
   }
   return result
 
+}
+
+function mapPathLogicalPart(path) {
+  return path.split('/').map((x) => {
+    if (x.startsWith('{') && x.endsWith('}'))
+      return x.slice(1, x.length - 1);
+    return x[0].toUpperCase() + x.slice(1);
+  }).join('')
+}
+
+function mapStringToSafeHex(string) {
+  return string.split().map((x) => x.charCodeAt(0).toString(16)).join('');
+}
+
+function logicalIdCompatible(text) {
+  const alphanumericRegex = /[^A-Za-z0-9]/g;
+  return text.replace(alphanumericRegex, mapStringToSafeHex);
+}
+
+function logicalIdForPart(location) {
+  switch (location.type) {
+  case 'API':
+    return 'RestApiDocPart';
+  case 'RESOURCE':
+    return mapPathLogicalPart(location.path) + 'ResourceDocPart';
+  case 'METHOD':
+    return mapPathLogicalPart(location.path) + location.method + 'MethodDocPart';
+  case 'QUERY_PARAMETER':
+    return mapPathLogicalPart(location.path) + location.method + logicalIdCompatible(location.name) + 'QueryParamDocPart';
+  case 'REQUEST_BODY':
+    return mapPathLogicalPart(location.path) + location.method + 'ReqBodyDocPart';
+  case 'REQUEST_HEADER':
+    return mapPathLogicalPart(location.path) + location.method + logicalIdCompatible(location.name) + 'ReqHeadDocPart';
+  case 'PATH_PARAMETER':
+    return mapPathLogicalPart(location.path) + location.method + logicalIdCompatible(location.name) + 'PathParamDocPart';
+  case 'RESPONSE':
+    return mapPathLogicalPart(location.path) + location.method + location.statusCode + 'ResDocPart';
+  case 'RESPONSE_HEADER':
+    return mapPathLogicalPart(location.path) + location.method + logicalIdCompatible(location.name) + location.statusCode + 'ResHeadDocPart';
+  case 'RESPONSE_BODY':
+    return mapPathLogicalPart(location.path) + location.method + location.statusCode + 'ResBodyDocPart';
+  case 'AUTHORIZER':
+    return logicalIdCompatible(location.name) + 'AuthorizerDocPart';
+  case 'MODEL':
+    return logicalIdCompatible(location.name) + 'ModelDocPart';
+  default:
+    throw new Error('Unknown location type ' + location.type);
+  }
 }
 
 var autoVersion;
@@ -110,25 +164,6 @@ module.exports = function() {
 
           return Promise.reject(err);
         })
-        .then(() =>
-          aws.request('APIGateway', 'getDocumentationParts', {
-            restApiId: this.restApiId,
-            limit: 9999,
-          })
-        )
-        .then(results => results.items.map(
-          part => aws.request('APIGateway', 'deleteDocumentationPart', {
-            documentationPartId: part.id,
-            restApiId: this.restApiId,
-          })
-        ))
-        .then(promises => Promise.all(promises))
-        .then(() => this.documentationParts.reduce((promise, part) => {
-          return promise.then(() => {
-            part.properties = JSON.stringify(part.properties);
-            return aws.request('APIGateway', 'createDocumentationPart', part);
-          });
-        }, Promise.resolve()))
         .then(() => aws.request('APIGateway', 'createDocumentationVersion', {
           restApiId: this.restApiId,
           documentationVersion: this.getDocumentationVersion(),
@@ -190,6 +225,12 @@ module.exports = function() {
         .filter(output => output.OutputKey === 'AwsDocApiId')
         .map(output => output.OutputValue)[0];
 
+      return this._updateDocumentation();
+    },
+
+    updateCfTemplateWithEndpoints: function updateCfTemplateWithEndpoints(restApiId) {
+      this.restApiId = restApiId;
+
       this.getGlobalDocumentationParts();
       this.getFunctionDocumentationParts();
 
@@ -200,7 +241,25 @@ module.exports = function() {
         return;
       }
 
-      return this._updateDocumentation();
+      const documentationPartResources = this.documentationParts.reduce((docParts, docPart) => {
+        docParts[logicalIdForPart(docPart.location)] = {
+          Type: 'AWS::ApiGateway::DocumentationPart',
+          Properties: {
+            Location: {
+              Type: docPart.location.type,
+              Name: docPart.location.name,
+              Path: docPart.location.path,
+              StatusCode: docPart.location.statusCode,
+              Method: docPart.location.method,
+            },
+            Properties: JSON.stringify(docPart.properties),
+            RestApiId: docPart.restApiId,
+          }
+        };
+        return docParts;
+      }, {});
+
+      Object.assign(this.cfTemplate.Resources, documentationPartResources);
     },
 
     addDocumentationToApiGateway: function addDocumentationToApiGateway(resource, documentationPart, mapPath) {

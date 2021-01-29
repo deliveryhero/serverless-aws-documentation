@@ -170,6 +170,9 @@ class ServerlessAWSDocumentation {
       func.events.forEach(this.updateCfTemplateFromHttp.bind(this));
     });
 
+    // Add documentation parts for HTTP endpoints
+    this.updateCfTemplateWithEndpoints(restApiId);
+
     // Add models
     this.cfTemplate.Outputs.AwsDocApiId = {
       Description: 'API ID',
